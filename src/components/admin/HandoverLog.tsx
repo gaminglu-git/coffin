@@ -5,25 +5,31 @@ import { MessageSquare, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getCurrentEmployee } from "@/app/actions/employees";
 import type { Employee } from "@/app/actions/employees";
+import { useRealtimeTable } from "@/hooks/useRealtimeTable";
 
 type HandoverEntry = {
   id: string;
   text: string;
   author: string;
   authorId: string | null;
+  caseId: string | null;
   createdAt: string;
 };
 
+type CaseOption = { id: string; name: string };
+
 export function HandoverLog() {
   const [entries, setEntries] = useState<HandoverEntry[]>([]);
+  const [cases, setCases] = useState<CaseOption[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [selectedCaseId, setSelectedCaseId] = useState("");
   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchEntries = useCallback(async () => {
     const { data, error } = await supabase
       .from("handover_logs")
-      .select("id, text, author, author_id, created_at")
+      .select("id, text, author, author_id, case_id, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -31,25 +37,44 @@ export function HandoverLog() {
       setEntries([]);
     } else {
       setEntries(
-        (data ?? []).map((r: any) => ({
-          id: r.id,
-          text: r.text,
-          author: r.author ?? "Unbekannt",
-          authorId: r.author_id,
-          createdAt: r.created_at,
+        (data ?? []).map((r: Record<string, unknown>) => ({
+          id: r.id as string,
+          text: r.text as string,
+          author: (r.author as string) ?? "Unbekannt",
+          authorId: (r.author_id as string | null) ?? null,
+          caseId: (r.case_id as string | null) ?? null,
+          createdAt: r.created_at as string,
         }))
       );
     }
     setLoading(false);
   }, []);
 
+  const fetchCases = useCallback(async () => {
+    const { data } = await supabase
+      .from("cases")
+      .select("id, name")
+      .order("name");
+    setCases(
+      (data ?? []).map((c: { id: string; name: string }) => ({ id: c.id, name: c.name }))
+    );
+  }, []);
+
   useEffect(() => {
     getCurrentEmployee().then(setCurrentEmployee);
+    fetchCases();
     fetchEntries();
-    const handleRefresh = () => fetchEntries();
+    const handleRefresh = () => {
+      fetchEntries();
+      fetchCases();
+    };
     window.addEventListener("fetch-cases", handleRefresh);
     return () => window.removeEventListener("fetch-cases", handleRefresh);
-  }, [fetchEntries]);
+  }, [fetchEntries, fetchCases]);
+
+  useRealtimeTable({ table: "handover_logs" }, () => {
+    fetchEntries();
+  });
 
   const handleAddMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,10 +84,12 @@ export function HandoverLog() {
       text: newMessage.trim(),
       author: currentEmployee.display_name,
       author_id: currentEmployee.id,
+      case_id: selectedCaseId || null,
     });
 
     if (!error) {
       setNewMessage("");
+      setSelectedCaseId("");
       fetchEntries();
     } else {
       console.error("HandoverLog insert error:", error);
@@ -97,6 +124,11 @@ export function HandoverLog() {
               </button>
               <div className="font-bold text-xs text-mw-green mb-1">
                 {msg.author}{" "}
+                {msg.caseId && (
+                  <span className="text-[10px] text-mw-green-light font-normal ml-1">
+                    · {cases.find((c) => c.id === msg.caseId)?.name ?? msg.caseId}
+                  </span>
+                )}
                 <span className="text-[10px] text-gray-400 font-normal ml-1">
                   • {new Date(msg.createdAt).toLocaleString("de-DE")}
                 </span>
@@ -108,8 +140,21 @@ export function HandoverLog() {
       </div>
       <form
         onSubmit={handleAddMessage}
-        className="flex gap-3 mt-auto shrink-0"
+        className="flex flex-col sm:flex-row gap-3 mt-auto shrink-0"
       >
+        <select
+          value={selectedCaseId}
+          onChange={(e) => setSelectedCaseId(e.target.value)}
+          className="sm:w-48 p-3 border border-gray-200 rounded-xl outline-none focus:border-mw-green text-sm bg-white"
+          title="Fall (optional)"
+        >
+          <option value="">Allgemein</option>
+          {cases.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
         <input
           type="text"
           placeholder="Neue Notiz eintragen..."

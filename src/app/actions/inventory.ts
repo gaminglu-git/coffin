@@ -97,6 +97,8 @@ export async function getInventoryItems(filters?: {
   status?: string;
   categoryId?: string;
   locationId?: string;
+  caseId?: string;
+  assignedOnly?: boolean;
 }): Promise<InventoryItem[]> {
   const supabase = await createClient();
   let query = supabase
@@ -112,24 +114,13 @@ export async function getInventoryItems(filters?: {
   if (filters?.status) query = query.eq("status", filters.status);
   if (filters?.categoryId) query = query.eq("category_id", filters.categoryId);
   if (filters?.locationId) query = query.eq("location_id", filters.locationId);
+  if (filters?.caseId) query = query.eq("case_id", filters.caseId);
+  if (filters?.assignedOnly) query = query.not("case_id", "is", null);
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return (data ?? []).map((row: Record<string, unknown>) => ({
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    status: row.status,
-    sequentialId: row.sequential_id,
-    categoryId: row.category_id,
-    locationId: row.location_id,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    category: row.inventory_categories ?? row.category ?? null,
-    location: row.inventory_locations ?? row.location ?? null,
-    qrCodes: Array.isArray(row.qr_codes) ? row.qr_codes : [],
-  })) as InventoryItem[];
+  return (data ?? []).map((row: Record<string, unknown>) => mapRowToInventoryItem(row));
 }
 
 export async function getInventoryItemById(
@@ -147,7 +138,10 @@ export async function getInventoryItemById(
     .eq("id", itemId)
     .single();
   if (error || !data) return null;
-  const row = data as Record<string, unknown>;
+  return mapRowToInventoryItem(data as Record<string, unknown>);
+}
+
+function mapRowToInventoryItem(row: Record<string, unknown>): InventoryItem {
   return {
     id: row.id,
     title: row.title,
@@ -156,6 +150,9 @@ export async function getInventoryItemById(
     sequentialId: row.sequential_id,
     categoryId: row.category_id,
     locationId: row.location_id,
+    caseId: row.case_id ?? null,
+    assignedAt: row.assigned_at ?? null,
+    deliveryStatus: (row.delivery_status as InventoryItem["deliveryStatus"]) ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     category: row.inventory_categories ?? row.category ?? null,
@@ -197,24 +194,7 @@ export async function createInventoryItemAction(
     .select("*, inventory_categories(*), inventory_locations(*), qr_codes(*)")
     .single();
   if (error) return { success: false, error: error.message };
-  const row = data as Record<string, unknown>;
-  return {
-    success: true,
-    data: {
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      status: row.status,
-      sequentialId: row.sequential_id,
-      categoryId: row.category_id,
-      locationId: row.location_id,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      category: row.inventory_categories ?? row.category,
-      location: row.inventory_locations ?? row.location,
-      qrCodes: Array.isArray(row.qr_codes) ? row.qr_codes : [],
-    } as InventoryItem,
-  };
+  return { success: true, data: mapRowToInventoryItem(data as Record<string, unknown>) };
 }
 
 export async function updateInventoryItemAction(
@@ -227,43 +207,63 @@ export async function updateInventoryItemAction(
     status: formData.get("status") || "in_stock",
     categoryId: formData.get("categoryId") || null,
     locationId: formData.get("locationId") || null,
+    caseId: formData.get("caseId") || null,
+    deliveryStatus: formData.get("deliveryStatus") || null,
   });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Validierungsfehler" };
   }
   const supabase = await createClient();
+  const updatePayload: Record<string, unknown> = {
+    title: parsed.data.title,
+    description: parsed.data.description ?? null,
+    status: parsed.data.status,
+    category_id: parsed.data.categoryId ?? null,
+    location_id: parsed.data.locationId ?? null,
+    case_id: parsed.data.caseId ?? null,
+    delivery_status: parsed.data.deliveryStatus ?? null,
+    updated_at: new Date().toISOString(),
+  };
+  if (parsed.data.caseId) {
+    updatePayload.assigned_at = new Date().toISOString();
+  } else {
+    updatePayload.assigned_at = null;
+  }
   const { data, error } = await supabase
     .from("inventory_items")
-    .update({
-      title: parsed.data.title,
-      description: parsed.data.description ?? null,
-      status: parsed.data.status,
-      category_id: parsed.data.categoryId ?? null,
-      location_id: parsed.data.locationId ?? null,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq("id", itemId)
     .select("*, inventory_categories(*), inventory_locations(*), qr_codes(*)")
     .single();
   if (error) return { success: false, error: error.message };
-  const row = data as Record<string, unknown>;
-  return {
-    success: true,
-    data: {
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      status: row.status,
-      sequentialId: row.sequential_id,
-      categoryId: row.category_id,
-      locationId: row.location_id,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      category: row.inventory_categories ?? row.category,
-      location: row.inventory_locations ?? row.location,
-      qrCodes: Array.isArray(row.qr_codes) ? row.qr_codes : [],
-    } as InventoryItem,
+  return { success: true, data: mapRowToInventoryItem(data as Record<string, unknown>) };
+}
+
+export async function assignInventoryItemToCaseAction(
+  itemId: string,
+  caseId: string | null,
+  deliveryStatus?: "reserved" | "assigned" | "delivered" | null
+): Promise<ActionResult<InventoryItem>> {
+  const supabase = await createClient();
+  const update: Record<string, unknown> = {
+    case_id: caseId ?? null,
+    assigned_at: caseId ? new Date().toISOString() : null,
+    delivery_status: deliveryStatus ?? null,
+    updated_at: new Date().toISOString(),
   };
+  if (caseId) {
+    update.status = "in_use";
+  } else {
+    update.status = "in_stock";
+  }
+  const { data, error } = await supabase
+    .from("inventory_items")
+    .update(update)
+    .eq("id", itemId)
+    .select("*, inventory_categories(*), inventory_locations(*), qr_codes(*)")
+    .single();
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: mapRowToInventoryItem(data as Record<string, unknown>) };
 }
 
 export async function deleteInventoryItemAction(

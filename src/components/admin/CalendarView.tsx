@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { de } from "date-fns/locale";
+import { ChevronRight, Pencil, Trash2 } from "lucide-react";
 import type { Appointment, Task } from "@/types";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 const locales = { "de-DE": de };
@@ -21,12 +23,26 @@ export type CalendarEvent = {
     title: string;
     start: Date;
     end: Date;
-    resource?: { type: "appointment" | "task"; completed?: boolean };
+    resource?: {
+        type: "appointment" | "task";
+        completed?: boolean;
+        caseId?: string | null;
+        displayTitle: string;
+        appointmentId?: string;
+        taskId?: string;
+    };
 };
 
 interface CalendarViewProps {
     appointments: Appointment[];
     tasks: Task[];
+    cases?: { id: string; name: string; contact?: { firstName?: string; lastName?: string } }[];
+    onOpenCase?: (caseId: string) => void;
+    onEditAppointment?: (appointment: Appointment) => void;
+    onEditTask?: (task: Task) => void;
+    onDeleteAppointment?: (id: string) => void;
+    onDeleteTask?: (id: string) => void;
+    getCaseDisplayLabel?: (caseId: string | null | undefined) => string | null;
 }
 
 const messages = {
@@ -48,7 +64,29 @@ const messages = {
     showMore: (total: number) => `+${total} weitere`,
 };
 
-export function CalendarView({ appointments, tasks }: CalendarViewProps) {
+const MOBILE_BREAKPOINT = 640;
+
+export function CalendarView({
+    appointments,
+    tasks,
+    cases = [],
+    onOpenCase,
+    onEditAppointment,
+    onEditTask,
+    onDeleteAppointment,
+    onDeleteTask,
+    getCaseDisplayLabel,
+}: CalendarViewProps) {
+    const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const check = () => setIsMobile(typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT);
+        check();
+        window.addEventListener("resize", check);
+        return () => window.removeEventListener("resize", check);
+    }, []);
+
     const events: CalendarEvent[] = useMemo(() => {
         const result: CalendarEvent[] = [];
 
@@ -61,7 +99,7 @@ export function CalendarView({ appointments, tasks }: CalendarViewProps) {
                 title: a.title,
                 start,
                 end,
-                resource: { type: "appointment" },
+                resource: { type: "appointment", caseId: a.caseId ?? null, displayTitle: a.title, appointmentId: a.id },
             });
         });
 
@@ -77,7 +115,7 @@ export function CalendarView({ appointments, tasks }: CalendarViewProps) {
                     title: `📋 ${t.title}`,
                     start: d,
                     end,
-                    resource: { type: "task", completed: t.completed },
+                    resource: { type: "task", completed: t.completed, caseId: t.caseId ?? null, displayTitle: t.title, taskId: t.id },
                 });
             });
 
@@ -93,7 +131,7 @@ export function CalendarView({ appointments, tasks }: CalendarViewProps) {
                     title: `✓ ${t.title}`,
                     start: d,
                     end,
-                    resource: { type: "task", completed: true },
+                    resource: { type: "task", completed: true, caseId: t.caseId ?? null, displayTitle: t.title, taskId: t.id },
                 });
             });
 
@@ -116,9 +154,15 @@ export function CalendarView({ appointments, tasks }: CalendarViewProps) {
         };
     }, []);
 
+    const getCaseName = (caseId: string | null | undefined) =>
+        caseId ? cases.find((c) => c.id === caseId)?.name ?? null : null;
+
+    const getDisplayLabel = (caseId: string | null | undefined) =>
+        getCaseDisplayLabel?.(caseId) ?? getCaseName(caseId);
+
     return (
-        <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+        <div className="space-y-2 sm:space-y-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-gray-500 px-1">
                 <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded bg-mw-green" /> Termin
                 </span>
@@ -129,7 +173,7 @@ export function CalendarView({ appointments, tasks }: CalendarViewProps) {
                     <span className="w-3 h-3 rounded bg-green-500" /> Aufgabe (erledigt)
                 </span>
             </div>
-            <div className="h-[calc(80vh-2rem)] min-h-[400px] bg-white rounded-3xl shadow-sm border border-gray-100 p-4">
+            <div className="h-[calc(80vh-2rem)] min-h-[320px] sm:min-h-[400px] bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 p-2 sm:p-4 rbc-calendar-mobile">
             <Calendar
                 localizer={localizer}
                 events={events}
@@ -139,11 +183,122 @@ export function CalendarView({ appointments, tasks }: CalendarViewProps) {
                 messages={messages}
                 culture="de-DE"
                 eventPropGetter={eventStyleGetter}
-                views={["month", "week", "day", "agenda"]}
-                defaultView="week"
+                views={isMobile ? ["day", "agenda"] : ["month", "week", "day", "agenda"]}
+                defaultView={isMobile ? "agenda" : "week"}
                 popup
+                longPressThreshold={1}
+                onSelectEvent={(event) => setSelectedEvent(event as CalendarEvent)}
             />
             </div>
+
+            <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-base font-serif">
+                            {selectedEvent?.resource?.type === "task" ? "Aufgabe" : "Termin"}
+                        </DialogTitle>
+                    </DialogHeader>
+                    {selectedEvent && (
+                        <div className="space-y-3">
+                            <p className="font-medium text-gray-800">{selectedEvent.resource?.displayTitle ?? selectedEvent.title}</p>
+                            <p className="text-sm text-gray-600">
+                                {format(selectedEvent.start, "EEEE, d. MMMM yyyy", { locale: de })}
+                                <br />
+                                {format(selectedEvent.start, "HH:mm")} – {format(selectedEvent.end, "HH:mm")} Uhr
+                            </p>
+                            {selectedEvent.resource?.caseId && getDisplayLabel(selectedEvent.resource.caseId) && (
+                                <p className="text-xs text-gray-500">
+                                    Fall: {getDisplayLabel(selectedEvent.resource.caseId)}
+                                </p>
+                            )}
+                            <div className="flex flex-col gap-2">
+                                {selectedEvent.resource?.caseId && onOpenCase && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            onOpenCase(selectedEvent.resource!.caseId!);
+                                            setSelectedEvent(null);
+                                        }}
+                                        className="flex items-center gap-2 w-full justify-center bg-mw-green text-white p-2.5 rounded-xl hover:bg-mw-green-dark transition text-sm font-medium"
+                                    >
+                                        Zum Fall
+                                        <ChevronRight size={16} />
+                                    </button>
+                                )}
+                                {!selectedEvent.resource?.caseId && (
+                                    <p className="text-xs text-gray-400 italic">Kein Fall verknüpft</p>
+                                )}
+                                <div className="flex gap-2">
+                                    {selectedEvent.resource?.type === "appointment" && selectedEvent.resource.appointmentId && onEditAppointment && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const appt = appointments.find((a) => a.id === selectedEvent.resource!.appointmentId);
+                                                    if (appt) {
+                                                        onEditAppointment(appt);
+                                                        setSelectedEvent(null);
+                                                    }
+                                                }}
+                                                className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 p-2.5 rounded-xl hover:bg-gray-200 transition text-sm font-medium"
+                                            >
+                                                <Pencil size={14} /> Bearbeiten
+                                            </button>
+                                            {onDeleteAppointment && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (confirm("Termin löschen?")) {
+                                                            onDeleteAppointment(selectedEvent.resource!.appointmentId!);
+                                                            setSelectedEvent(null);
+                                                        }
+                                                    }}
+                                                    className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition"
+                                                    title="Löschen"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
+                                    {selectedEvent.resource?.type === "task" && selectedEvent.resource.taskId && onEditTask && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const task = tasks.find((t) => t.id === selectedEvent.resource!.taskId);
+                                                    if (task) {
+                                                        onEditTask(task);
+                                                        setSelectedEvent(null);
+                                                    }
+                                                }}
+                                                className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 p-2.5 rounded-xl hover:bg-gray-200 transition text-sm font-medium"
+                                            >
+                                                <Pencil size={14} /> Bearbeiten
+                                            </button>
+                                            {onDeleteTask && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (confirm("Aufgabe wirklich löschen?")) {
+                                                            onDeleteTask(selectedEvent.resource!.taskId!);
+                                                            setSelectedEvent(null);
+                                                        }
+                                                    }}
+                                                    className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition"
+                                                    title="Löschen"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

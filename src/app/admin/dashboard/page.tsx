@@ -5,16 +5,19 @@ import { Plus, Filter } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { KanbanBoard } from "@/components/admin/KanbanBoard";
 import { TeamDashboard } from "@/components/admin/TeamDashboard";
+import { CorrespondenceView } from "@/components/admin/CorrespondenceView";
 import { HandoverLog } from "@/components/admin/HandoverLog";
 import { CaseWizard } from "@/components/admin/CaseWizard";
+import { CaseDetailModal } from "@/components/admin/CaseDetailModal";
 import { EmployeeManagement } from "@/components/admin/EmployeeManagement";
 import { listEmployees, type Employee } from "@/app/actions/employees";
 
 export default function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState<"cases" | "tasks" | "handover" | "employees">("cases");
+    const [activeTab, setActiveTab] = useState<"cases" | "tasks" | "correspondences" | "handover" | "employees">("cases");
     const [taskFilter, setTaskFilter] = useState("Alle");
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [isWizardOpen, setIsWizardOpen] = useState(false);
+    const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
 
     useEffect(() => {
         listEmployees().then(setEmployees);
@@ -29,7 +32,7 @@ export default function AdminDashboard() {
             <div className="flex flex-col h-full overflow-hidden">
                 <div className="bg-white border-b border-gray-200 p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center shrink-0 gap-4">
                     <h2 className="text-xl sm:text-2xl font-serif text-gray-800">
-                        {activeTab === "cases" ? "Kanban-Board" : activeTab === "tasks" ? "Team Dashboard" : activeTab === "handover" ? "Allgemeines Übergabebuch" : "Mitarbeiter"}
+                        {activeTab === "cases" ? "Kanban-Board" : activeTab === "tasks" ? "Team Dashboard" : activeTab === "correspondences" ? "Korrespondenzen" : activeTab === "handover" ? "Allgemeines Übergabebuch" : "Mitarbeiter"}
                     </h2>
 
                     {activeTab === "cases" && (
@@ -66,14 +69,16 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex-1 overflow-auto p-4 sm:p-6 bg-[#f3f4f6] relative">
-                    {activeTab === "cases" && <KanbanBoard />}
-                    {activeTab === "tasks" && <TeamDashboard taskFilter={taskFilter} employees={employees} />}
+                    {activeTab === "cases" && <KanbanBoard onCaseClick={setActiveCaseId} />}
+                    {activeTab === "tasks" && <TeamDashboard taskFilter={taskFilter} employees={employees} onOpenCase={setActiveCaseId} />}
+                    {activeTab === "correspondences" && <CorrespondenceView />}
                     {activeTab === "handover" && <HandoverLog />}
                     {activeTab === "employees" && <EmployeeManagement />}
                 </div>
             </div>
 
             <CaseWizard open={isWizardOpen} onOpenChange={setIsWizardOpen} />
+            <CaseDetailModal activeCaseId={activeCaseId} onClose={() => setActiveCaseId(null)} />
         </AdminShell>
     );
 }

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Briefcase, CheckCircle, MessageSquare, Users, Package, LogOut, Menu, X } from "lucide-react";
+import { Briefcase, CheckCircle, MessageSquare, Users, Package, LogOut, Menu, X, Mail } from "lucide-react";
+import { NotificationBell } from "@/components/admin/NotificationBell";
 import { useEffect, useState } from "react";
 import { logoutAction } from "@/app/actions/auth";
 import { getCurrentEmployee } from "@/app/actions/employees";
 
-type TabType = "cases" | "tasks" | "handover" | "employees";
+type TabType = "cases" | "tasks" | "correspondences" | "handover" | "employees";
 
 interface AdminShellProps {
   children: React.ReactNode;
@@ -76,13 +77,16 @@ export function AdminShell({ children, activeTab, setActiveTab }: AdminShellProp
             {currentUser ? `Eingeloggt als ${currentUser}` : "Team Workspace"}
           </p>
         </div>
-        <button
-          onClick={closeSidebar}
-          className="md:hidden p-2 -m-2 rounded-lg hover:bg-white/10 transition"
-          aria-label="Menü schließen"
-        >
-          <X size={20} />
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell align="left" />
+          <button
+            onClick={closeSidebar}
+            className="md:hidden p-2 -m-2 rounded-lg hover:bg-white/10 transition"
+            aria-label="Menü schließen"
+          >
+            <X size={20} />
+          </button>
+        </div>
       </div>
       <div className="flex-1 py-6 px-4 space-y-2 flex flex-col">
         {navItem(
@@ -95,6 +99,12 @@ export function AdminShell({ children, activeTab, setActiveTab }: AdminShellProp
           <CheckCircle size={18} />,
           "Aufgaben & Termine",
           "tasks",
+          "/admin/dashboard"
+        )}
+        {navItem(
+          <Mail size={18} />,
+          "Korrespondenzen",
+          "correspondences",
           "/admin/dashboard"
         )}
         {navItem(
@@ -156,15 +166,18 @@ export function AdminShell({ children, activeTab, setActiveTab }: AdminShellProp
       {/* Main content */}
       <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
         {/* Mobile: hamburger button */}
-        <div className="md:hidden flex items-center gap-2 p-4 bg-white border-b border-gray-200 shrink-0">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 -m-2 rounded-lg hover:bg-gray-100 transition"
-            aria-label="Menü öffnen"
-          >
-            <Menu size={24} className="text-gray-700" />
-          </button>
-          <span className="font-serif text-lg text-gray-800">minten & walter</span>
+        <div className="md:hidden flex items-center justify-between gap-2 p-4 bg-white border-b border-gray-200 shrink-0">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 -m-2 rounded-lg hover:bg-gray-100 transition"
+              aria-label="Menü öffnen"
+            >
+              <Menu size={24} className="text-gray-700" />
+            </button>
+            <span className="font-serif text-lg text-gray-800">minten & walter</span>
+          </div>
+          <NotificationBell variant="light" />
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">
           {children}

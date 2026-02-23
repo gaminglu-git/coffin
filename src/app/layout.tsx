@@ -17,7 +17,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de" className={`${inter.variable} ${playfair.variable} scroll-smooth`}>
-      <body className="font-sans antialiased text-gray-800 bg-[#faf9f7] selection:bg-[#4a554e] selection:text-white">
+      <body
+        className="font-sans antialiased text-gray-800 bg-[#faf9f7] selection:bg-[#4a554e] selection:text-white"
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>

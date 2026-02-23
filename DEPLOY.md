@@ -119,6 +119,55 @@ Du richtest den Reverse Proxy separat ein. Typische Konfiguration (z.B. Nginx Pr
 
 ---
 
+## 502 Bad Gateway (OpenResty / Nginx) – Troubleshooting
+
+Wenn du extern auf **Mitarbeiter-Login** (`/admin`) oder **Angehörigen-Login** (`/family`) zugreifst und einen **502 Bad Gateway** bekommst, prüfe Folgendes:
+
+### 1. Upstream erreichbar?
+
+- Ist der Coffin-Container läuft? (Portainer → Stacks → coffin → Logs)
+- Kann OpenResty den Upstream erreichen? Wenn Coffin auf dem gleichen Host läuft: `http://127.0.0.1:3000` oder `http://HOST-IP:3000`
+- Wenn OpenResty und Coffin in Docker sind: gleiches Netzwerk nutzen, z.B. `http://coffin:3000` (Container-Name aus docker-compose)
+
+### 2. Proxy-Header setzen
+
+Next.js braucht die richtigen Forwarded-Header. In deiner OpenResty/Nginx-Config z.B.:
+
+```nginx
+location / {
+    proxy_pass http://coffin:3000;   # oder http://127.0.0.1:3000
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_cache_bypass $http_upgrade;
+    proxy_read_timeout 60s;
+    proxy_connect_timeout 60s;
+    proxy_send_timeout 60s;
+}
+```
+
+### 3. Timeouts erhöhen
+
+Die Middleware ruft bei jedem Request `supabase.auth.getUser()` auf. Bei langsamer Verbindung kann das zu Timeouts führen. `proxy_read_timeout` und `proxy_connect_timeout` auf mind. 60s setzen.
+
+### 4. Supabase Redirect-URLs
+
+Im **Supabase Dashboard** → **Authentication** → **URL Configuration**:
+
+- **Site URL**: `https://deine-domain.de` (deine öffentliche App-URL)
+- **Redirect URLs**: `https://deine-domain.de/**` hinzufügen
+
+### 5. Logs prüfen
+
+- **OpenResty/Nginx Error-Log**: z.B. `upstream timed out` oder `connection refused`
+- **Coffin-Logs** in Portainer: Fehler beim Start oder bei Requests?
+
+---
+
 ## Updates deployen
 
 1. Code ins Repo pushen (bei Git-Methode)
@@ -131,16 +180,33 @@ Du richtest den Reverse Proxy separat ein. Typische Konfiguration (z.B. Nginx Pr
 
 ### RLS-Policies
 
-Die Migration `20260223160000_rls_security_fixes.sql` behebt die meisten Supabase-Security-Warnungen:
+Die Migrationen `20260223160000_rls_security_fixes.sql` und `20260223170000_security_advisor_fixes.sql` beheben die Supabase-Security-Warnungen:
 
 - **Admin-Policies**: Nur Mitarbeiter (Eintrag in `employees`) können Admin-Daten lesen/schreiben.
 - **Anon update/delete auf cases**: Entfernt – nicht genutzt und unsicher.
+- **function_search_path_mutable**: `is_employee()` hat jetzt `SET search_path = public`.
+- **rls_policy_always_true**: INSERT-Policies für cases, memories, family_photos, inventory_scans nutzen explizite Validierung statt `WITH CHECK (true)`.
 
 ### Leaked Password Protection (Supabase Dashboard)
 
 1. **Projekt** → **Authentication** → **Providers** → **Email**
 2. **Leaked password protection** aktivieren (prüft gegen HaveIBeenPwned.org)
 3. **Hinweis**: Nur auf Pro Plan und höher verfügbar.
+
+---
+
+## E-Mail-Eingang (optional)
+
+Eingehende E-Mails können per Webhook an die App gesendet werden:
+
+1. **Webhook-URL**: `POST https://DEINE-APP-URL/api/inbound-email`
+2. **Header** (optional): `X-Inbound-Secret: DEIN_SECRET` – setze `INBOUND_EMAIL_SECRET` in den Umgebungsvariablen
+3. **Body** (JSON):
+   - `from`, `subject`, `text` oder `html`
+   - `caseId` (optional) – sonst wird eine UUID aus dem Betreff extrahiert
+   - `attachments` (optional): `[{ "filename": "x.pdf", "content": "base64..." }]`
+
+Kompatibel mit Resend Inbound, Mailgun Routes oder eigener Weiterleitung.
 
 ---
 

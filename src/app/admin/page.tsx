@@ -76,6 +76,7 @@ export default function AdminLogin() {
                     <button
                         type="submit"
                         disabled={isLoading}
+                        suppressHydrationWarning
                         className="w-full bg-mw-green text-white py-3 rounded-xl font-medium hover:bg-mw-green-dark disabled:bg-gray-400 flex justify-center items-center gap-2 shadow-md transition"
                     >
                         {isLoading ? "Bitte warten..." : "Einloggen"} <ChevronRight size={18} />

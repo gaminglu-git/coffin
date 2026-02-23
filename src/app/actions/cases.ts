@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import type { Case } from "@/types";
 import { vorsorgeConfigSchema, type VorsorgeConfigFormData } from "@/lib/validations/vorsorge";
 import { caseWizardSchema, type CaseWizardFormData } from "@/lib/validations/case";
 
@@ -73,4 +74,29 @@ export async function createCaseAction(data: CaseWizardFormData): Promise<Create
   }
 
   return { success: true, familyPin };
+}
+
+export async function getCaseById(id: string): Promise<Case | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("cases")
+    .select("id, name, status, created_at, family_pin, wishes, deceased, contact, checklists")
+    .eq("id", id)
+    .single();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    name: data.name,
+    status: data.status,
+    createdAt: data.created_at,
+    familyPin: data.family_pin,
+    wishes: data.wishes ?? {},
+    deceased: data.deceased ?? {},
+    contact: data.contact ?? {},
+    checklists: data.checklists ?? [],
+    notes: [],
+    memories: [],
+  };
 }

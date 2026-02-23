@@ -74,6 +74,7 @@ export interface Task {
     dueDate: string | null;
     completed: boolean;
     createdAt: string;
+    caseId?: string | null;
 }
 
 export interface Appointment {
@@ -81,6 +82,61 @@ export interface Appointment {
     title: string;
     date: string;
     createdAt: string;
+    caseId?: string | null;
+}
+
+// Correspondence = Kontakt (Person oder Firma) – Adressbuch
+export type CorrespondenceKind = 'person' | 'company';
+
+export interface Correspondence {
+    id: string;
+    caseId: string | null;
+    kind: CorrespondenceKind;
+    displayName: string;
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    companyName?: string | null;
+    notes?: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Communication = Eingehende/ausgehende Nachricht
+export type CommunicationType = 'email' | 'letter' | 'phone' | 'other';
+export type CommunicationDirection = 'incoming' | 'outgoing';
+
+export interface Communication {
+    id: string;
+    correspondenceId?: string | null;
+    caseId: string;
+    employeeId?: string | null;
+    taskId?: string | null;
+    appointmentId?: string | null;
+    type: CommunicationType;
+    direction: CommunicationDirection;
+    subject?: string | null;
+    content?: string | null;
+    storagePath?: string | null;
+    createdAt: string;
+}
+
+export interface LetterTemplate {
+    id: string;
+    name: string;
+    subject: string | null;
+    body: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface EmailTemplate {
+    id: string;
+    name: string;
+    subject: string;
+    body: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Message {
@@ -119,6 +175,8 @@ export interface InventoryLocation {
     updatedAt: string;
 }
 
+export type DeliveryStatus = 'reserved' | 'assigned' | 'delivered' | null;
+
 export interface InventoryItem {
     id: string;
     title: string;
@@ -127,6 +185,9 @@ export interface InventoryItem {
     sequentialId: string | null;
     categoryId: string | null;
     locationId: string | null;
+    caseId?: string | null;
+    assignedAt?: string | null;
+    deliveryStatus?: DeliveryStatus;
     createdAt: string;
     updatedAt: string;
     category?: InventoryCategory | null;

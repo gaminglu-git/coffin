@@ -98,3 +98,31 @@
   color: white !important;
   border-color: var(--color-mw-green) !important;
 }
+
+/* Mobile calendar: compact toolbar, touch-friendly */
+@media (max-width: 639px) {
+  .rbc-calendar-mobile .rbc-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+  .rbc-calendar-mobile .rbc-toolbar button {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  .rbc-calendar-mobile .rbc-toolbar-label {
+    font-size: 0.8rem;
+    order: -1;
+    width: 100%;
+    text-align: center;
+  }
+  .rbc-calendar-mobile .rbc-event {
+    padding: 1px 4px !important;
+    font-size: 0.65rem !important;
+  }
+  .rbc-calendar-mobile .rbc-time-view,
+  .rbc-calendar-mobile .rbc-agenda-view {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}

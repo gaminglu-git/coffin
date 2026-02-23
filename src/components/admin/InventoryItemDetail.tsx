@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Package, MapPin, QrCode as QrCodeIcon } from "lucide-react";
+import { ArrowLeft, Package, MapPin, QrCode as QrCodeIcon, Briefcase } from "lucide-react";
 import { getInventoryItemById, createQrCodeAction } from "@/app/actions/inventory";
 import { QRCodeDisplay } from "./QRCodeDisplay";
 import { ScanHistory } from "./ScanHistory";
@@ -14,6 +14,12 @@ const STATUS_LABELS: Record<string, string> = {
   in_stock: "Auf Lager",
   in_use: "In Benutzung",
   checked_out: "Ausgeliehen",
+};
+
+const DELIVERY_LABELS: Record<string, string> = {
+  reserved: "Reserviert",
+  assigned: "Zugewiesen",
+  delivered: "Geliefert",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -109,6 +115,15 @@ export function InventoryItemDetail({ itemId }: InventoryItemDetailProps) {
                 <span className="flex items-center gap-1">
                   <MapPin size={14} /> {item.location.name}
                 </span>
+              )}
+              {item.caseId && (
+                <Link
+                  href="/admin/dashboard"
+                  className="flex items-center gap-1 text-mw-green hover:text-mw-green-dark"
+                >
+                  <Briefcase size={14} /> Fall verknüpft
+                  {item.deliveryStatus && ` (${DELIVERY_LABELS[item.deliveryStatus] ?? item.deliveryStatus})`}
+                </Link>
               )}
             </div>
           </div>

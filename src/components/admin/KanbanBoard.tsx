@@ -23,8 +23,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Case, CaseStatus } from "@/types";
-import { CaseDetailModal } from "@/components/admin/CaseDetailModal";
 import { supabase } from "@/lib/supabase";
+import { useRealtimeTable } from "@/hooks/useRealtimeTable";
 
 const KANBAN_COLUMNS: { id: CaseStatus; title: string; color: string }[] = [
     { id: "Neu", title: "Neu / Erstkontakt", color: "bg-blue-100 text-blue-800 border-blue-200" },
@@ -138,10 +138,13 @@ function DroppableColumn({ column, cases, onCaseClick, onDelete }: { column: typ
     );
 }
 
-export function KanbanBoard() {
+interface KanbanBoardProps {
+    onCaseClick?: (caseId: string) => void;
+}
+
+export function KanbanBoard({ onCaseClick }: KanbanBoardProps) {
     const [cases, setCases] = useState<Case[]>([]);
     const [activeId, setActiveId] = useState<string | null>(null);
-    const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -185,6 +188,9 @@ export function KanbanBoard() {
         window.addEventListener('fetch-cases', handleFetch);
         return () => window.removeEventListener('fetch-cases', handleFetch);
     }, [fetchCases]);
+
+    useRealtimeTable({ table: "cases" }, fetchCases);
+    useRealtimeTable({ table: "tasks" }, fetchCases);
 
     const handleDragStart = (event: DragStartEvent) => {
         setActiveId(event.active.id as string);
@@ -352,7 +358,7 @@ export function KanbanBoard() {
                                 .filter((c) => c.status === col.id)
                                 .sort((a, b) => (a.position || 0) - (b.position || 0))
                             }
-                            onCaseClick={setActiveCaseId}
+                            onCaseClick={onCaseClick ?? (() => {})}
                             onDelete={fetchCases}
                         />
                     ))}
@@ -378,7 +384,6 @@ export function KanbanBoard() {
                     ) : null}
                 </DragOverlay>
             </DndContext>
-            <CaseDetailModal activeCaseId={activeCaseId} onClose={() => setActiveCaseId(null)} />
         </>
     );
 }

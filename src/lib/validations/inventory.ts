@@ -13,12 +13,16 @@ export const inventoryLocationSchema = z.object({
   description: z.string().optional(),
 });
 
+export const DELIVERY_STATUSES = ['reserved', 'assigned', 'delivered'] as const;
+
 export const inventoryItemSchema = z.object({
   title: z.string().min(1, 'Titel ist erforderlich'),
   description: z.string().optional(),
   status: z.enum(INVENTORY_STATUSES),
   categoryId: z.string().uuid().optional().nullable(),
   locationId: z.string().uuid().optional().nullable(),
+  caseId: z.string().uuid().optional().nullable(),
+  deliveryStatus: z.enum(DELIVERY_STATUSES).optional().nullable(),
 });
 
 export const qrCodeSchema = z.object({
