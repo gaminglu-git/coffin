@@ -27,14 +27,22 @@ lookup registry-1.docker.io on 192.168.178.24:53: read udp ... i/o timeout
 
 **Lösung:** Auf dem Docker-Host (z.B. per SSH) andere DNS-Server eintragen:
 
+**Option A – Script (Repo auf Host klonen oder Script kopieren):**  
+```bash
+# Auf dem Docker-Host per SSH
+sudo bash scripts/fix-docker-dns.sh
+```
+
+**Option B – Manuell:**  
 1. `/etc/docker/daemon.json` bearbeiten:
 ```json
 {
   "dns": ["8.8.8.8", "1.1.1.1"]
 }
 ```
-
 2. Docker neu starten: `systemctl restart docker`
+
+**Test:** `docker pull node:20` sollte danach funktionieren.
 
 ---
 
