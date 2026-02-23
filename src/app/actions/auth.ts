@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect, isRedirectError } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export async function loginAction(formData: FormData) {
@@ -27,7 +27,7 @@ export async function loginAction(formData: FormData) {
 
     redirect("/admin/dashboard");
   } catch (e) {
-    if (isRedirectError(e)) throw e;
+    unstable_rethrow(e);
     const err = e as Error;
     console.error("[Auth] Unexpected error:", err);
     return {
