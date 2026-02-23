@@ -56,6 +56,7 @@ export default function AdminLogin() {
                         <input
                             name="email"
                             type="email"
+                            autoComplete="email"
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mw-green outline-none"
                             placeholder="name@minten-walter.de"
                             required
@@ -66,6 +67,7 @@ export default function AdminLogin() {
                         <input
                             name="password"
                             type="password"
+                            autoComplete="current-password"
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mw-green outline-none"
                             placeholder="2026!"
                             required
