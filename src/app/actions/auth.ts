@@ -15,7 +15,9 @@ export async function loginAction(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    return { error: "Falsche E-Mail oder Passwort." };
+    // Zeige echte Fehlermeldung für Debugging (z.B. "Email not confirmed")
+    console.error("[Auth] Supabase error:", error.message, error.code);
+    return { error: error.message || "Falsche E-Mail oder Passwort." };
   }
 
   redirect("/admin/dashboard");
