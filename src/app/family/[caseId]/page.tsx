@@ -3,10 +3,13 @@
 import { useState, useEffect, use } from "react";
 
 import { useRouter } from "next/navigation";
-import { LogOut, Clock, CheckCircle, Heart, FileText, Send, UploadCloud } from "lucide-react";
-import Link from "next/link";
+import { LogOut, Clock, CheckCircle, Heart, FileText, Send, UploadCloud, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { CircularPhotoGallery } from "@/components/family/CircularPhotoGallery";
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const KANBAN_COLUMNS = [
     { id: "Neu", title: "Neu / Erstkontakt" },
@@ -21,6 +24,8 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
     const { caseId: pin } = use(params);
 
     const [newMemory, setNewMemory] = useState("");
+    const [uploadedByName, setUploadedByName] = useState("");
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [caseData, setCaseData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -30,7 +35,7 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
 
             const { data, error } = await supabase
                 .from("cases")
-                .select("*, memories(*)")
+                .select("*, memories(*), family_photos(*)")
                 .eq("family_pin", pin)
                 .single();
 
@@ -38,9 +43,14 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
                 router.push("/family");
                 return;
             }
-            // Sort memories by created_at desc
             if (data.memories) {
                 data.memories.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            }
+            if (data.family_photos) {
+                data.family_photos = data.family_photos.map((p: any) => ({
+                    ...p,
+                    url: supabase.storage.from("family-files").getPublicUrl(p.storage_path).data.publicUrl,
+                }));
             }
             setCaseData(data);
             setLoading(false);
@@ -96,19 +106,62 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
         }
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file || !caseData) return;
 
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${caseData.id}/${Math.random()}.${fileExt}`;
-
-        const { error } = await supabase.storage.from('family-files').upload(fileName, file);
-        if (error) {
-            alert("Fehler beim Upload.");
-        } else {
-            alert(`Datei "${file.name}" wurde erfolgreich hochgeladen.`);
+        const name = uploadedByName.trim() || "Anonym";
+        if (!name) {
+            alert("Bitte geben Sie Ihren Namen ein.");
+            return;
         }
+
+        if (!IMAGE_TYPES.includes(file.type)) {
+            alert("Nur Bilder (JPG, PNG, WebP, GIF) sind erlaubt.");
+            e.target.value = "";
+            return;
+        }
+        if (file.size > MAX_FILE_SIZE) {
+            alert("Max. 10MB pro Bild.");
+            e.target.value = "";
+            return;
+        }
+
+        setUploadingPhoto(true);
+        const fileExt = file.name.split(".").pop() || "jpg";
+        const storagePath = `${caseData.id}/photos/${crypto.randomUUID()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage.from("family-files").upload(storagePath, file);
+        if (uploadError) {
+            alert(`Fehler beim Upload: ${uploadError.message}`);
+            setUploadingPhoto(false);
+            e.target.value = "";
+            return;
+        }
+
+        const { data: photoData, error: insertError } = await supabase
+            .from("family_photos")
+            .insert({ case_id: caseData.id, storage_path: storagePath, uploaded_by_name: name })
+            .select()
+            .single();
+
+        if (insertError) {
+            alert(`Fehler beim Speichern: ${insertError.message}`);
+            setUploadingPhoto(false);
+            e.target.value = "";
+            return;
+        }
+
+        const { data: urlData } = supabase.storage.from("family-files").getPublicUrl(storagePath);
+        setCaseData({
+            ...caseData,
+            family_photos: [
+                { ...photoData, url: urlData.publicUrl },
+                ...(caseData.family_photos || []),
+            ],
+        });
+        setUploadingPhoto(false);
+        e.target.value = "";
     };
 
     if (loading) return <div className="min-h-screen bg-[var(--color-mw-offwhite)] flex items-center justify-center"><div className="animate-pulse text-[var(--color-mw-green)]">Lade Fall-Daten...</div></div>;
@@ -135,6 +188,27 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
                         Für <strong>{caseData.name.replace("VORSORGE: ", "")}</strong>.
                     </p>
                 </header>
+
+                {/* Lieblingsbilder – direkt unter dem Header */}
+                {caseData.family_photos && caseData.family_photos.length > 0 && (
+                    <div className="mb-12">
+                        <CircularPhotoGallery
+                            photos={caseData.family_photos.map((p: any) => ({
+                                id: p.id,
+                                url: p.url,
+                                caption: p.caption,
+                                uploadedBy: p.uploaded_by_name,
+                            }))}
+                            groupByPerson={false}
+                            height={500}
+                            bend={2}
+                            textColor="#4a554e"
+                            borderRadius={0.05}
+                            scrollSpeed={2}
+                            scrollEase={0.05}
+                        />
+                    </div>
+                )}
 
                 <div className="grid md:grid-cols-3 gap-8">
                     {/* Timeline Status Tracker */}
@@ -226,26 +300,44 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
                             </div>
                         </div>
 
-                        {/* Media Upload Area */}
+                        {/* Lieblingsbilder */}
                         <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
-                            <h3 className="text-xl font-serif text-[var(--color-mw-green)] flex items-center gap-2 mb-6">
-                                <UploadCloud size={24} className="text-[var(--color-mw-green-light)]" /> Dokumente & Fotos
+                            <h3 className="text-xl font-serif text-[var(--color-mw-green)] flex items-center gap-2 mb-2">
+                                <ImageIcon size={24} className="text-[var(--color-mw-green-light)]" /> Lieblingsbilder
                             </h3>
                             <p className="text-sm text-gray-600 mb-6">
-                                Hier können Sie uns sicher Bilder für die Trauerfeier, Personalausweise oder Versicherungspolicen hochladen.
+                                Laden Sie Ihre Lieblingsbilder hoch – sie werden als Galerie unter Ihrem Namen angezeigt.
                             </p>
+
+                            <div className="space-y-4 mb-6">
+                                <label className="block text-sm font-medium text-gray-700">Ihr Name (z.B. Vorname oder Spitzname)</label>
+                                <input
+                                    type="text"
+                                    value={uploadedByName}
+                                    onChange={(e) => setUploadedByName(e.target.value)}
+                                    placeholder="Maria, Thomas, Oma..."
+                                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[var(--color-mw-green-light)] outline-none text-sm"
+                                />
+                            </div>
 
                             <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center bg-[var(--color-mw-offwhite)] relative transition-all hover:bg-white hover:border-[var(--color-mw-green-light)]">
                                 <input
                                     type="file"
-                                    multiple
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    onChange={handleFileUpload}
-                                    title="Dateien hochladen"
+                                    accept="image/jpeg,image/png,image/webp,image/gif"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                    onChange={handlePhotoUpload}
+                                    disabled={uploadingPhoto}
+                                    title="Bilder hochladen"
                                 />
-                                <UploadCloud size={32} className="mx-auto text-gray-400 mb-4" />
-                                <p className="text-sm font-medium text-gray-700">Klicken oder Dateien hierher ziehen</p>
-                                <p className="text-xs text-gray-400 mt-2">Max. 10MB pro Datei (PDF, JPG, PNG)</p>
+                                {uploadingPhoto ? (
+                                    <div className="animate-pulse text-[var(--color-mw-green)]">Wird hochgeladen...</div>
+                                ) : (
+                                    <>
+                                        <UploadCloud size={32} className="mx-auto text-gray-400 mb-4" />
+                                        <p className="text-sm font-medium text-gray-700">Klicken oder Bild hierher ziehen</p>
+                                        <p className="text-xs text-gray-400 mt-2">JPG, PNG, WebP, GIF – max. 10MB</p>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Printer, CheckCircle, MessageSquare, Heart, X, Key } from "lucide-react";
+import { FileText, Printer, CheckCircle, MessageSquare, Heart, X, Key, ImageIcon } from "lucide-react";
 import { Case } from "@/types";
 import { supabase } from "@/lib/supabase";
 import { pdf } from "@react-pdf/renderer";
@@ -90,13 +90,22 @@ export function CaseDetailModal({ activeCaseId, onClose }: { activeCaseId: strin
         const fetchCaseData = async () => {
             const { data, error } = await supabase
                 .from("cases")
-                .select("*, notes(*), memories(*)")
+                .select("*, notes(*), memories(*), family_photos(*)")
                 .eq("id", activeCaseId)
                 .single();
 
             if (data && !error) {
                 if (data.notes) data.notes.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
                 if (data.memories) data.memories.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+                const familyPhotos = data.family_photos?.map((p: any) => ({
+                    id: p.id,
+                    storagePath: p.storage_path,
+                    url: supabase.storage.from("family-files").getPublicUrl(p.storage_path).data.publicUrl,
+                    uploadedByName: p.uploaded_by_name,
+                    caption: p.caption,
+                    createdAt: p.created_at,
+                })) || [];
 
                 setCurrentCase({
                     id: data.id,
@@ -110,6 +119,7 @@ export function CaseDetailModal({ activeCaseId, onClose }: { activeCaseId: strin
                     checklists: data.checklists,
                     notes: data.notes?.map((n: any) => ({ id: n.id, text: n.text, author: n.author, createdAt: n.created_at })) || [],
                     memories: data.memories?.map((m: any) => ({ id: m.id, text: m.text, createdAt: m.created_at })) || [],
+                    familyPhotos,
                 });
             }
         };
@@ -226,7 +236,7 @@ export function CaseDetailModal({ activeCaseId, onClose }: { activeCaseId: strin
                     {/* Right Column: Notes & Memories */}
                     <div className="w-full lg:w-1/2 flex flex-col min-h-0 min-w-0 bg-[#f3f4f6]">
                         {/* Notes */}
-                        <div className="flex-1 flex flex-col h-1/2 border-b border-gray-200">
+                        <div className="flex-1 flex flex-col min-h-0 border-b border-gray-200">
                             <div className="p-4 bg-white border-b border-gray-200">
                                 <h3 className="font-medium text-gray-800 flex items-center gap-2">
                                     <MessageSquare size={18} className="text-mw-green" /> Interne Team-Notizen
@@ -246,7 +256,7 @@ export function CaseDetailModal({ activeCaseId, onClose }: { activeCaseId: strin
                         </div>
 
                         {/* Memories */}
-                        <div className="flex-1 flex flex-col h-1/2 bg-mw-offwhite">
+                        <div className="flex-1 flex flex-col min-h-0 border-b border-gray-200">
                             <div className="p-4 bg-white border-b border-gray-200 flex justify-between items-center">
                                 <h3 className="font-medium text-gray-800 flex items-center gap-2">
                                     <Heart size={18} className="text-red-400" /> Erinnerungen der Angehörigen
@@ -263,6 +273,38 @@ export function CaseDetailModal({ activeCaseId, onClose }: { activeCaseId: strin
                                             <span className="text-[10px] text-gray-400 uppercase tracking-widest">{new Date(mem.createdAt).toLocaleDateString()}</span>
                                         </div>
                                     ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Lieblingsbilder */}
+                        <div className="flex-1 flex flex-col min-h-0 bg-mw-offwhite">
+                            <div className="p-4 bg-white border-b border-gray-200">
+                                <h3 className="font-medium text-gray-800 flex items-center gap-2">
+                                    <ImageIcon size={18} className="text-mw-green" /> Lieblingsbilder
+                                </h3>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4">
+                                {!currentCase.familyPhotos?.length ? (
+                                    <p className="text-sm text-center text-gray-400 mt-4 italic">Noch keine Lieblingsbilder hochgeladen.</p>
+                                ) : (
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                        {currentCase.familyPhotos.map((photo) => (
+                                            <a
+                                                key={photo.id}
+                                                href={photo.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="block aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-mw-green transition"
+                                            >
+                                                <img
+                                                    src={photo.url}
+                                                    alt={photo.caption || `Foto von ${photo.uploadedByName}`}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </a>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         </div>

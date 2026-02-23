@@ -110,12 +110,33 @@ using (true);
 -- 8. STORAGE BUCKET FOR FILES (Optional but good to set up)
 insert into storage.buckets (id, name, public) values ('family-files', 'family-files', true);
 
-create policy "Allow public uploads to family-files" 
-on storage.objects for insert 
-to public 
+create policy "Allow anon uploads to family-files"
+on storage.objects for insert
+to anon
 with check (bucket_id = 'family-files');
 
-create policy "Allow public viewing of family-files" 
-on storage.objects for select 
-to public 
+create policy "Allow anon viewing of family-files"
+on storage.objects for select
+to anon
 using (bucket_id = 'family-files');
+
+-- 9. FAMILY_PHOTOS (Lieblingsbilder pro Angehörigen)
+create table public.family_photos (
+  id uuid default uuid_generate_v4() primary key,
+  case_id uuid references public.cases(id) on delete cascade not null,
+  storage_path text not null,
+  uploaded_by_name text not null,
+  caption text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.family_photos enable row level security;
+
+create policy "Admins can do everything on family_photos"
+on public.family_photos for all to authenticated using (true) with check (true);
+
+create policy "Anyone can insert family_photos"
+on public.family_photos for insert to anon with check (true);
+
+create policy "Anyone can read family_photos"
+on public.family_photos for select to anon using (true);

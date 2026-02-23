@@ -46,6 +46,14 @@ export interface Case {
         text: string;
         createdAt: string;
     }[];
+    familyPhotos?: {
+        id: string;
+        storagePath: string;
+        url?: string;
+        uploadedByName: string;
+        caption?: string | null;
+        createdAt: string;
+    }[];
     files?: {
         id: string;
         name: string;
@@ -79,6 +87,15 @@ export interface Message {
     id: string;
     text: string;
     author: string;
+    createdAt: string;
+}
+
+export interface FamilyPhoto {
+    id: string;
+    caseId: string;
+    storagePath: string;
+    uploadedByName: string;
+    caption?: string | null;
     createdAt: string;
 }
 
