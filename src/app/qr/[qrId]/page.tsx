@@ -27,7 +27,7 @@ export default async function QrScanPage({
 
   if (!qr) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-mw-sand p-4">
+      <div className="min-h-screen flex items-center justify-center bg-stone-100 p-4">
         <div className="bg-white rounded-2xl p-8 max-w-md text-center shadow-lg">
           <h1 className="text-xl font-serif text-gray-800 mb-2">QR-Code unbekannt</h1>
           <p className="text-gray-600">
@@ -55,7 +55,7 @@ export default async function QrScanPage({
   return (
     <div className="min-h-screen flex items-center justify-center bg-mw-sand p-4">
       <div className="bg-white rounded-2xl p-8 max-w-md text-center shadow-lg">
-        <h1 className="text-xl font-serif text-mw-green mb-2">
+        <h1 className="text-xl font-serif text-emerald-900 mb-2">
           minten & walter
         </h1>
         <p className="text-gray-600">
@@ -65,7 +65,7 @@ export default async function QrScanPage({
         </p>
         <a
           href="/admin"
-          className="inline-block mt-6 text-mw-green font-medium hover:underline"
+          className="inline-block mt-6 text-emerald-900 font-medium hover:underline"
         >
           Zum Mitarbeiter-Login
         </a>

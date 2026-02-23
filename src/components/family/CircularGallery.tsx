@@ -660,7 +660,7 @@ interface CircularGalleryProps {
 export default function CircularGallery({
     items,
     bend = 3,
-    textColor = "#4a554e",
+    textColor = "#064e3b",
     borderRadius = 0.05,
     font = "400 22px 'Playfair Display', serif",
     scrollSpeed = 2,

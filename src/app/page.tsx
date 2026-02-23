@@ -16,27 +16,38 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <div className="pt-20 bg-[var(--color-mw-offwhite)] min-h-screen">
-        <section id="hero" className="relative bg-[var(--color-mw-sand)] py-24 sm:py-32 lg:pb-40 text-center px-4 overflow-hidden">
-          <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#e1ded5] opacity-50 blur-3xl pointer-events-none"></div>
-          <div className="relative z-10 max-w-4xl mx-auto">
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif text-[var(--color-mw-green-dark)] mb-6 leading-tight">
-              Wir begleiten Abschied. <br className="hidden sm:block" />
-              Einfühlsam, offen und menschlich.
-            </h2>
-            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Seit über 20 Jahren sind wir in Bonn jederzeit für Sie da. Im Trauerfall ebenso wie bei der Vorsorge. Wir geben Ihnen den Raum, den es braucht.
+      <div className="pt-20 bg-stone-50 min-h-screen">
+        <section id="hero" className="relative min-h-[80vh] bg-stone-50 flex items-center justify-center py-24 sm:py-32 lg:pb-40 text-center px-4 overflow-hidden">
+          {/* Dekorative Blumen-SVGs im Hintergrund */}
+          <div className="absolute top-10 left-10 opacity-50 pointer-events-none">
+            <img src="/assets/hand-drawn-flower-1.svg" alt="" className="w-24 h-24 sm:w-32 sm:h-32 drop-shadow-sm" />
+          </div>
+          <div className="absolute bottom-20 right-10 opacity-50 pointer-events-none">
+            <img src="/assets/hand-drawn-leaf.svg" alt="" className="w-28 h-28 sm:w-40 sm:h-40 drop-shadow-sm" />
+          </div>
+          <div className="absolute top-1/4 right-1/4 opacity-30 pointer-events-none hidden lg:block">
+            <img src="/assets/botanical-decoration.svg" alt="" className="w-24 h-24" />
+          </div>
+          <div className="absolute bottom-1/3 left-1/4 opacity-30 pointer-events-none hidden lg:block">
+            <img src="/assets/hand-drawn-flower-1.svg" alt="" className="w-20 h-20" />
+          </div>
+          <div className="relative z-10 max-w-3xl mx-auto space-y-8">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif text-emerald-900 tracking-tight">
+              liebevoll bestatten.
+            </h1>
+            <p className="text-lg sm:text-xl text-stone-600 max-w-xl mx-auto leading-relaxed">
+              Wir begleiten Sie in schweren Zeiten mit Wärme, Empathie und einem Fokus auf das, was wirklich zählt: Ein würdevoller, liebevoller Abschied.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button
                 onClick={() => scrollTo("kontakt")}
-                className="bg-[var(--color-mw-green)] text-white px-8 py-3.5 rounded-full text-lg font-medium hover:bg-[var(--color-mw-green-dark)] transition flex items-center justify-center gap-2 shadow-lg"
+                className="px-8 py-4 bg-rose-200 text-stone-800 rounded-full font-medium hover:bg-rose-300 transition-colors shadow-sm hover:shadow-md flex items-center justify-center gap-2"
               >
-                <Phone size={20} /> Im Trauerfall anrufen
+                <Phone size={20} /> Lassen Sie uns reden
               </button>
               <button
                 onClick={() => setIsConfiguratorOpen(true)}
-                className="bg-white text-[var(--color-mw-green)] px-8 py-3.5 rounded-full text-lg font-medium hover:bg-gray-50 border border-gray-200 transition flex items-center justify-center gap-2 shadow-sm"
+                className="px-8 py-4 bg-white text-emerald-900 rounded-full font-medium hover:bg-stone-100 border border-stone-200 transition flex items-center justify-center gap-2 shadow-sm"
               >
                 <FileSearch size={20} /> Vorsorge digital planen
               </button>
@@ -46,64 +57,64 @@ export default function Home() {
 
         <section id="philosophie" className="py-24 bg-white px-4">
           <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-12">
-            <div className="bg-[var(--color-mw-offwhite)] p-10 rounded-3xl border border-gray-100 hover:border-[#d5d0c5] transition">
-              <Heart className="text-[var(--color-mw-green-light)] w-12 h-12 mb-6" />
-              <h4 className="text-2xl font-serif text-[var(--color-mw-green)] mb-4">Wir sind einfühlsam.</h4>
-              <p className="text-gray-600 leading-relaxed">
+            <div className="bg-stone-50 p-10 rounded-[2rem] border border-stone-100 hover:border-rose-200 transition shadow-sm">
+              <Heart className="text-emerald-600 w-12 h-12 mb-6" />
+              <h4 className="text-2xl font-serif text-emerald-900 mb-4">Wir sind einfühlsam.</h4>
+              <p className="text-stone-600 leading-relaxed">
                 Wir nehmen uns Zeit. Gemeinsam gestalten wir individuelle Abschiede. Den Sarg bemalen, die Urne selbst tragen – all das kann helfen, den Verlust zu begreifen.
               </p>
             </div>
-            <div className="bg-[var(--color-mw-offwhite)] p-10 rounded-3xl border border-gray-100 hover:border-[#d5d0c5] transition">
-              <ShieldCheck className="text-[var(--color-mw-green-light)] w-12 h-12 mb-6" />
-              <h4 className="text-2xl font-serif text-[var(--color-mw-green)] mb-4">Wir sind offen.</h4>
-              <p className="text-gray-600 leading-relaxed">
+            <div className="bg-stone-50 p-10 rounded-[2rem] border border-stone-100 hover:border-rose-200 transition shadow-sm">
+              <ShieldCheck className="text-emerald-600 w-12 h-12 mb-6" />
+              <h4 className="text-2xl font-serif text-emerald-900 mb-4">Wir sind offen.</h4>
+              <p className="text-stone-600 leading-relaxed">
                 Offen für alle Menschen (LGBTQIA+ friendly) und Formen des Abschieds. Wir zeigen auf, was möglich ist und machen unsere Kosten absolut transparent.
               </p>
             </div>
-            <div className="bg-[var(--color-mw-offwhite)] p-10 rounded-3xl border border-gray-100 hover:border-[#d5d0c5] transition">
-              <Users className="text-[var(--color-mw-green-light)] w-12 h-12 mb-6" />
-              <h4 className="text-2xl font-serif text-[var(--color-mw-green)] mb-4">Wir sind menschlich.</h4>
-              <p className="text-gray-600 leading-relaxed">
+            <div className="bg-stone-50 p-10 rounded-[2rem] border border-stone-100 hover:border-rose-200 transition shadow-sm">
+              <Users className="text-emerald-600 w-12 h-12 mb-6" />
+              <h4 className="text-2xl font-serif text-emerald-900 mb-4">Wir sind menschlich.</h4>
+              <p className="text-stone-600 leading-relaxed">
                 Nahbar und respektvoll. Wir waschen den verstorbenen Menschen, gerne in eigener Kleidung, wenn gewünscht auch gemeinsam mit Ihnen zu Hause.
               </p>
             </div>
           </div>
         </section>
 
-        <section id="leistungen" className="py-24 bg-[var(--color-mw-sand)] px-4">
+        <section id="leistungen" className="py-24 bg-stone-100 px-4">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
             <div className="md:w-1/2">
-              <h3 className="text-3xl sm:text-4xl font-serif text-[var(--color-mw-green)] mb-6 leading-tight">
+              <h3 className="text-3xl sm:text-4xl font-serif text-emerald-900 mb-6 leading-tight">
                 Selbstbestimmt bis zum Schluss. <br />
                 Unsere Vorsorge.
               </h3>
-              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+              <p className="text-stone-600 mb-6 text-lg leading-relaxed">
                 Nehmen Sie Ihren Liebsten die schwersten Entscheidungen ab. Mit einer Bestattungsvorsorge legen Sie zu Lebzeiten fest, wie Ihr Abschied gestaltet werden soll.
               </p>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
-                  <CheckCircle className="text-[var(--color-mw-green)] mt-1 shrink-0" size={20} />
-                  <span className="text-gray-700">Sicherheit und Entlastung für Angehörige.</span>
+                  <CheckCircle className="text-emerald-600 mt-1 shrink-0" size={20} />
+                  <span className="text-stone-700">Sicherheit und Entlastung für Angehörige.</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <CheckCircle className="text-[var(--color-mw-green)] mt-1 shrink-0" size={20} />
-                  <span className="text-gray-700">Garantiert Ihre persönlichen Wünsche.</span>
+                  <CheckCircle className="text-emerald-600 mt-1 shrink-0" size={20} />
+                  <span className="text-stone-700">Garantiert Ihre persönlichen Wünsche.</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <CheckCircle className="text-[var(--color-mw-green)] mt-1 shrink-0" size={20} />
-                  <span className="text-gray-700">Volle finanzielle Absicherung möglich.</span>
+                  <CheckCircle className="text-emerald-600 mt-1 shrink-0" size={20} />
+                  <span className="text-stone-700">Volle finanzielle Absicherung möglich.</span>
                 </li>
               </ul>
             </div>
-            <div className="md:w-1/2 w-full bg-white p-8 sm:p-12 rounded-3xl shadow-xl border border-gray-100 text-center" id="vorsorge">
-              <Euro className="text-[var(--color-mw-green)] w-16 h-16 mx-auto mb-6 opacity-80" />
-              <h4 className="text-2xl font-serif text-[var(--color-mw-green)] mb-4">Transparente Kostenplanung</h4>
-              <p className="text-gray-600 mb-8">
+            <div className="md:w-1/2 w-full bg-white p-8 sm:p-12 rounded-[2rem] shadow-xl border border-stone-100 text-center" id="vorsorge">
+              <Euro className="text-emerald-600 w-16 h-16 mx-auto mb-6 opacity-80" />
+              <h4 className="text-2xl font-serif text-emerald-900 mb-4">Transparente Kostenplanung</h4>
+              <p className="text-stone-600 mb-8">
                 Nutzen Sie unseren digitalen Konfigurator, um in 3 einfachen Schritten Ihre Wünsche zusammenzustellen und eine sofortige Kostenschätzung zu erhalten.
               </p>
               <button
                 onClick={() => setIsConfiguratorOpen(true)}
-                className="bg-[var(--color-mw-green)] text-white px-8 py-4 rounded-xl text-lg font-medium hover:bg-[var(--color-mw-green-dark)] transition w-full shadow-md"
+                className="bg-emerald-900 text-white px-8 py-4 rounded-full text-lg font-medium hover:bg-emerald-950 transition w-full shadow-md"
               >
                 Jetzt Wünsche konfigurieren
               </button>
@@ -111,30 +122,30 @@ export default function Home() {
           </div>
         </section>
 
-        <footer id="kontakt" className="bg-[var(--color-mw-green-dark)] text-white py-20 px-4">
+        <footer id="kontakt" className="bg-emerald-950 text-white py-20 px-4">
           <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16">
             <div>
-              <h4 className="text-3xl font-serif mb-8 text-[var(--color-mw-sand)]">Wir sind für Sie da.</h4>
+              <h4 className="text-3xl font-serif mb-8 text-stone-100">Wir sind für Sie da.</h4>
               <div className="space-y-6">
-                <div className="flex items-center gap-4 text-gray-200 bg-[var(--color-mw-green)]/30 p-4 rounded-2xl">
-                  <Phone size={24} className="text-[#a8b5ab]" />
+                <div className="flex items-center gap-4 text-stone-200 bg-emerald-900/40 p-4 rounded-2xl">
+                  <Phone size={24} className="text-emerald-200" />
                   <span className="text-xl">0228 620 58 15</span>
                 </div>
-                <div className="flex items-center gap-4 text-gray-200 p-4">
-                  <Mail size={24} className="text-[#a8b5ab]" />
+                <div className="flex items-center gap-4 text-stone-200 p-4">
+                  <Mail size={24} className="text-emerald-200" />
                   <a href="mailto:info@minten-walter.de" className="text-lg hover:text-white transition">
                     info@minten-walter.de
                   </a>
                 </div>
               </div>
             </div>
-            <div className="bg-[var(--color-mw-green)] rounded-3xl p-10 text-center shadow-2xl flex flex-col justify-center">
-              <Info size={48} className="mx-auto mb-6 text-[#a8b5ab]" />
-              <h5 className="text-2xl font-serif mb-4 text-[var(--color-mw-sand)]">Im Trauerfall - Was tun?</h5>
-              <p className="text-gray-300 mb-8 leading-relaxed">
+            <div className="bg-emerald-900 rounded-[2rem] p-10 text-center shadow-2xl flex flex-col justify-center">
+              <Info size={48} className="mx-auto mb-6 text-emerald-200" />
+              <h5 className="text-2xl font-serif mb-4 text-stone-100">Im Trauerfall - Was tun?</h5>
+              <p className="text-stone-300 mb-8 leading-relaxed">
                 Sie haben Zeit. Sie dürfen den verstorbenen Menschen bis zu 36h zu Hause behalten. Rufen Sie den Arzt (Totenschein) und im Anschluss uns an.
               </p>
-              <a href="tel:02286205815" className="inline-block bg-white text-[var(--color-mw-green-dark)] px-8 py-3.5 rounded-full font-medium hover:bg-gray-100 transition mx-auto shadow-md">
+              <a href="tel:02286205815" className="inline-block bg-rose-200 text-stone-800 px-8 py-3.5 rounded-full font-medium hover:bg-rose-300 transition mx-auto shadow-md">
                 Jetzt anrufen
               </a>
             </div>

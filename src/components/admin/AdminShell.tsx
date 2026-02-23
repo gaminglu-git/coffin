@@ -48,7 +48,7 @@ export function AdminShell({ children, activeTab, setActiveTab }: AdminShellProp
             closeSidebar();
           }}
           className={`flex items-center gap-3 px-4 py-3 rounded-xl transition w-full text-left ${
-            activeTab === tab ? "bg-mw-green shadow-md" : "hover:bg-mw-green/50"
+            activeTab === tab ? "bg-emerald-700 shadow-md" : "hover:bg-emerald-700/50"
           }`}
         >
           {icon} {label}
@@ -60,7 +60,7 @@ export function AdminShell({ children, activeTab, setActiveTab }: AdminShellProp
         href={href}
         onClick={closeSidebar}
         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${
-          pathname === href ? "bg-mw-green shadow-md" : "hover:bg-mw-green/50"
+          pathname === href ? "bg-emerald-700 shadow-md" : "hover:bg-emerald-700/50"
         }`}
       >
         {icon} {label}
@@ -70,10 +70,10 @@ export function AdminShell({ children, activeTab, setActiveTab }: AdminShellProp
 
   const sidebarContent = (
     <>
-      <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-[#353e39]">
+      <div className="p-6 border-b border-emerald-800 flex justify-between items-center bg-emerald-950">
         <div>
-          <h2 className="font-serif text-xl">minten & walter</h2>
-          <p className="text-xs text-gray-400">
+          <h2 className="font-serif text-xl">liebevoll bestatten</h2>
+          <p className="text-xs text-stone-400">
             {currentUser ? `Eingeloggt als ${currentUser}` : "Team Workspace"}
           </p>
         </div>
@@ -123,7 +123,7 @@ export function AdminShell({ children, activeTab, setActiveTab }: AdminShellProp
           href="/admin/inventory"
           onClick={closeSidebar}
           className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${
-            isInventory ? "bg-mw-green shadow-md" : "hover:bg-mw-green/50"
+            isInventory ? "bg-emerald-700 shadow-md" : "hover:bg-emerald-700/50"
           }`}
         >
           <Package size={18} /> Lager
@@ -154,7 +154,7 @@ export function AdminShell({ children, activeTab, setActiveTab }: AdminShellProp
         className={`
           fixed md:static inset-y-0 left-0 z-40 h-full
           w-64 max-w-[85vw] md:w-64
-          bg-mw-green-dark text-white flex flex-col shrink-0 shadow-xl
+          bg-emerald-950 text-white flex flex-col shrink-0 shadow-xl
           transform transition-transform duration-300 ease-out
           md:transform-none
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}

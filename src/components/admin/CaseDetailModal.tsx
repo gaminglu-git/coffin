@@ -17,16 +17,16 @@ import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 const styles = StyleSheet.create({
     page: { padding: 40, fontFamily: "Helvetica", fontSize: 12, color: "#333" },
     header: { borderBottom: 1, borderBottomColor: "#ebe8e1", paddingBottom: 20, marginBottom: 30, flexDirection: "row", justifyContent: "space-between" },
-    title: { fontSize: 24, color: "#4a554e" },
+    title: { fontSize: 24, color: "#064e3b" },
     subtitle: { fontSize: 10, color: "#7a857e", textTransform: "uppercase", letterSpacing: 2 },
     address: { fontSize: 10, color: "#666", textAlign: "right", lineHeight: 1.5 },
-    heading: { fontSize: 18, color: "#4a554e", marginBottom: 10, borderBottom: 1, borderBottomColor: "#ccc", paddingBottom: 5 },
+    heading: { fontSize: 18, color: "#064e3b", marginBottom: 10, borderBottom: 1, borderBottomColor: "#ccc", paddingBottom: 5 },
     text: { marginBottom: 5, lineHeight: 1.5 },
     bold: { fontWeight: "bold" },
     table: { marginTop: 20 },
     row: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#eee" },
-    totalRow: { flexDirection: "row", justifyContent: "space-between", paddingTop: 15, marginTop: 15, borderTopWidth: 2, borderTopColor: "#4a554e" },
-    totalText: { fontSize: 16, color: "#4a554e", fontWeight: "bold" },
+    totalRow: { flexDirection: "row", justifyContent: "space-between", paddingTop: 15, marginTop: 15, borderTopWidth: 2, borderTopColor: "#064e3b" },
+    totalText: { fontSize: 16, color: "#064e3b", fontWeight: "bold" },
     footer: { position: "absolute", bottom: 40, left: 40, right: 40, fontSize: 10, color: "#888", borderTop: 1, borderTopColor: "#eee", paddingTop: 10 }
 });
 

@@ -43,7 +43,7 @@ const KanbanCard = memo(({ c, onClick, onDelete, isDragging, listeners, attribut
             style={style}
             {...attributes}
             {...listeners}
-            className={`bg-white p-4 rounded-xl shadow-sm border cursor-pointer hover:shadow-md transition-all relative group touch-none ${isVorsorge ? "border-blue-300 bg-blue-50/30" : "border-gray-200 hover:border-[#4a554e]/50"
+            className={`bg-white p-4 rounded-xl shadow-sm border cursor-pointer hover:shadow-md transition-all relative group touch-none ${isVorsorge ? "border-blue-300 bg-blue-50/30" : "border-stone-200 hover:border-emerald-900/50"
                 } ${isDragging ? "opacity-50 grayscale-[0.5] scale-95 z-50" : ""}`}
         >
             <div className="absolute top-2 right-2 sm:opacity-0 group-hover:opacity-100 transition">

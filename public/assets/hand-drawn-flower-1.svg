@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" stroke="#fda4af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Hand-drawn style rose/flower - soft petals -->
+  <path d="M64 40 C58 50 52 55 50 60 C48 65 50 72 55 75 C60 78 65 76 68 72 C72 68 74 62 72 55 C70 48 66 42 64 40 Z" fill="#fecdd3" opacity="0.9"/>
+  <path d="M64 45 C70 48 76 50 80 55 C84 60 82 68 78 72 C74 76 68 78 64 76 C60 74 56 70 56 64 C56 58 60 50 64 45 Z" fill="#fecdd3" opacity="0.9"/>
+  <path d="M64 50 C58 54 52 58 50 64 C48 70 52 76 58 78 C64 80 70 78 74 74 C78 70 80 64 78 58 C76 52 70 48 64 50 Z" fill="#fda4af" opacity="0.85"/>
+  <path d="M64 55 C68 52 74 52 78 56 C82 60 82 66 80 72 C78 78 72 82 66 82 C60 82 54 78 52 72 C50 66 52 58 64 55 Z" fill="#fecdd3" opacity="0.9"/>
+  <!-- Center -->
+  <circle cx="64" cy="64" r="8" fill="#fef3c7" stroke="#fda4af" stroke-width="1"/>
+  <!-- Stem -->
+  <path d="M64 88 Q62 100 60 115" stroke="#059669" stroke-width="2"/>
+  <!-- Leaf -->
+  <path d="M62 95 Q55 100 52 105 Q54 102 58 98 Z" fill="#a7f3d0" stroke="#059669" stroke-width="1"/>
+</svg>

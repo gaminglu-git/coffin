@@ -26,23 +26,23 @@ export default function AdminLogin() {
     };
 
     return (
-        <div className="min-h-screen bg-mw-sand flex items-center justify-center px-4 relative z-50">
+        <div className="min-h-screen bg-stone-100 flex items-center justify-center px-4 relative z-50">
             <div className="absolute top-6 left-6">
-                <Link href="/" className="font-serif text-xl text-mw-green">
+                <Link href="/" className="font-serif text-xl text-emerald-900">
                     minten & walter
                 </Link>
             </div>
 
             <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 sm:p-12 relative overflow-hidden border border-gray-100">
-                <div className="absolute top-0 left-0 w-full h-2 bg-mw-green"></div>
+                <div className="absolute top-0 left-0 w-full h-2 bg-emerald-600 rounded-t-2xl"></div>
 
                 <Link href="/" className="absolute top-6 right-6 text-gray-400 hover:text-gray-600">
                     <X size={24} />
                 </Link>
 
                 <div className="text-center mb-10">
-                    <Lock className="mx-auto text-mw-green mb-4" size={40} />
-                    <h2 className="text-2xl font-serif text-mw-green">Mitarbeiter Login</h2>
+                    <Lock className="mx-auto text-emerald-600 mb-4" size={40} />
+                    <h2 className="text-2xl font-serif text-emerald-900">Mitarbeiter Login</h2>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-6">
@@ -57,7 +57,7 @@ export default function AdminLogin() {
                             name="email"
                             type="email"
                             autoComplete="email"
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mw-green outline-none"
+                            className="w-full p-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                             placeholder="name@minten-walter.de"
                             required
                         />
@@ -68,7 +68,7 @@ export default function AdminLogin() {
                             name="password"
                             type="password"
                             autoComplete="current-password"
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mw-green outline-none"
+                            className="w-full p-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                             placeholder="2026!"
                             required
                         />
@@ -77,7 +77,7 @@ export default function AdminLogin() {
                         type="submit"
                         disabled={isLoading}
                         suppressHydrationWarning
-                        className="w-full bg-mw-green text-white py-3 rounded-xl font-medium hover:bg-mw-green-dark disabled:bg-gray-400 flex justify-center items-center gap-2 shadow-md transition"
+                        className="w-full bg-emerald-900 text-white py-3 rounded-full font-medium hover:bg-emerald-950 disabled:bg-stone-400 flex justify-center items-center gap-2 shadow-md transition"
                     >
                         {isLoading ? "Bitte warten..." : "Einloggen"} <ChevronRight size={18} />
                     </button>
