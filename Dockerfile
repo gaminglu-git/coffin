@@ -1,11 +1,11 @@
-# Build stage
-FROM node:20-alpine AS builder
+# Build stage - node:20 (vollständig) für maximale npm-Kompatibilität
+FROM node:20 AS builder
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies - npm install statt npm ci (toleranter bei Lockfile-Problemen)
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 # Copy source and build
 COPY . .
