@@ -1,9 +1,11 @@
-# Docker Compose für Docker Stack Deploy (Swarm)
-# Vor dem Deploy: docker build -t coffin-app:latest .
-# Deploy: docker stack deploy -c docker-compose.yaml coffin
+# Docker Compose für Portainer / lokales Deploy
+# Mit build: wird das Image aus dem Repo gebaut (kein Pull nötig)
 
 services:
   app:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: coffin-app:latest
     ports:
       - "3000:3000"
@@ -29,4 +31,4 @@ services:
 
 networks:
   coffin-net:
-    driver: overlay
+    driver: bridge
