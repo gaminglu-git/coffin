@@ -1,5 +1,9 @@
 # Docker Compose für Portainer / lokales Deploy
 # Mit build: wird das Image aus dem Repo gebaut (kein Pull nötig)
+#
+# DuckDNS-URL (z.B. coffin.gellen.duckdns.org) in Portainer setzen:
+#   NEXT_PUBLIC_APP_URL=https://coffin.gellen.duckdns.org
+#   NEXT_PUBLIC_SITE_URL=https://coffin.gellen.duckdns.org
 
 services:
   app:
