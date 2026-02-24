@@ -38,6 +38,6 @@ export async function loginAction(formData: FormData) {
 
 export async function logoutAction() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/admin");
 }

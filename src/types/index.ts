@@ -78,14 +78,41 @@ export interface Task {
     completed: boolean;
     createdAt: string;
     caseId?: string | null;
+    reminderAt?: string | null;
 }
 
 export interface Appointment {
     id: string;
     title: string;
     date: string;
+    endAt?: string | null;
     createdAt: string;
     caseId?: string | null;
+    assigneeId?: string | null;
+    assignee?: string;
+    reminderAt?: string | null;
+}
+
+export type EventRecurrenceType = "none" | "weekly" | "monthly" | "monthly_nth";
+
+export interface EventRecurrenceConfig {
+    weekday?: number; // 1=Mon, 7=Sun
+    weekOfMonth?: number; // 1-5
+}
+
+export interface Event {
+    id: string;
+    name: string;
+    description: string | null;
+    startAt: string;
+    endAt: string;
+    location: string | null;
+    isPublic: boolean;
+    recurrenceType: EventRecurrenceType;
+    recurrenceConfig: EventRecurrenceConfig;
+    recurrenceUntil: string | null;
+    createdAt: string;
+    updatedAt: string;
 }
 
 // Correspondence = Kontakt (Person oder Firma) – Adressbuch
@@ -200,11 +227,54 @@ export interface InventoryItem {
     caseId?: string | null;
     assignedAt?: string | null;
     deliveryStatus?: DeliveryStatus;
+    priceCents?: number | null;
+    imageStoragePath?: string | null;
+    parameters?: Record<string, string | number | boolean>;
     createdAt: string;
     updatedAt: string;
     category?: InventoryCategory | null;
     location?: InventoryLocation | null;
     qrCodes?: QrCode[];
+}
+
+// Leistungen (services for Vorsorge configurator)
+export type LeistungType =
+  | "bestattungsart"
+  | "ausstattung_sarg"
+  | "ausstattung_urne"
+  | "rahmen"
+  | "sonstiges";
+
+export type LeistungPriceType = "fixed" | "per_unit" | "min_price" | "on_request";
+
+export interface LeistungCategory {
+    id: string;
+    name: string;
+    description: string | null;
+    sortOrder: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Leistung {
+    id: string;
+    title: string;
+    description: string | null;
+    priceCents: number;
+    priceType?: LeistungPriceType;
+    unitLabel?: string | null;
+    parentId?: string | null;
+    imageStoragePath: string | null;
+    isPublic: boolean;
+    leistungType: LeistungType;
+    categoryId: string | null;
+    inventoryItemId: string | null;
+    parameters: Record<string, string | number | boolean>;
+    sortOrder: number;
+    createdAt: string;
+    updatedAt: string;
+    category?: LeistungCategory | null;
+    inventoryItem?: InventoryItem | null;
 }
 
 export interface QrCode {

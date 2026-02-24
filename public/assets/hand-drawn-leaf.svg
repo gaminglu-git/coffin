@@ -1,8 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Hand-drawn botanical leaf -->
-  <path d="M80 20 Q100 40 110 60 Q120 80 115 100 Q110 120 95 135 Q80 150 65 140 Q50 130 45 110 Q40 90 50 70 Q60 50 80 20 Z" fill="#a7f3d0" fill-opacity="0.9" stroke="#059669"/>
-  <path d="M80 25 L80 130" stroke="#059669" stroke-width="1" opacity="0.6"/>
-  <path d="M80 50 Q95 55 100 65" stroke="#059669" stroke-width="0.8" opacity="0.5"/>
-  <path d="M80 75 Q92 78 98 88" stroke="#059669" stroke-width="0.8" opacity="0.5"/>
-  <path d="M80 100 Q90 102 95 110" stroke="#059669" stroke-width="0.8" opacity="0.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 160" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Hand-drawn Blatt: klare Blattform mit Mittelrippe -->
+  <path d="M64 20 Q92 50 88 90 Q84 130 64 148 Q44 130 40 90 Q36 50 64 20" stroke="#059669" />
+  <path d="M64 28 L64 132" stroke="#a7f3d0" stroke-width="1.2" />
 </svg>

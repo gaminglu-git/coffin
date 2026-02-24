@@ -126,23 +126,25 @@ export async function getTimeEntries(
   }));
 }
 
-/** Berechnet die Gesamtstunden aus gepaarten clock_in/clock_out-Einträgen. */
+/** Berechnet die Gesamtstunden aus gepaarten clock_in/clock_out-Einträgen. Nutzt DB-RPC für Performance. */
 export async function getTotalHoursForEmployee(
   employeeId: string,
   from?: Date,
   to?: Date
 ): Promise<number> {
-  const entries = await getTimeEntries(employeeId, from, to);
-  let totalMs = 0;
-  let lastIn: TimeEntryEvent | null = null;
+  const supabase = await createClient();
+  const fromTs = from?.toISOString() ?? new Date(0).toISOString();
+  const toTs = to?.toISOString() ?? new Date().toISOString();
 
-  for (const e of entries) {
-    if (e.eventType === "clock_in") {
-      lastIn = e;
-    } else if (e.eventType === "clock_out" && lastIn) {
-      totalMs += new Date(e.recordedAt).getTime() - new Date(lastIn.recordedAt).getTime();
-      lastIn = null;
-    }
+  const { data, error } = await supabase.rpc("get_total_hours_for_employee", {
+    p_employee_id: employeeId,
+    p_from: fromTs,
+    p_to: toTs,
+  });
+
+  if (error) {
+    console.error("getTotalHoursForEmployee RPC error:", error);
+    return 0;
   }
-  return totalMs / (1000 * 60 * 60);
+  return typeof data === "number" ? data : 0;
 }

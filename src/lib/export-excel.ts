@@ -1,15 +1,15 @@
 /**
  * Export content as Excel (xlsx).
  * Uses SheetJS (xlsx) for client-side Excel generation.
+ * Dynamically imported to reduce initial bundle size.
  */
 
-import * as XLSX from "xlsx";
-
-export function exportLetterAsExcel(
+export async function exportLetterAsExcel(
   subject: string,
   content: string,
   filename?: string
-): void {
+): Promise<void> {
+  const XLSX = await import("xlsx");
   const ws = XLSX.utils.aoa_to_sheet([
     ["Betreff", subject],
     ["Datum", new Date().toLocaleDateString("de-DE")],
@@ -27,11 +27,12 @@ export interface ChecklistItem {
   items: { text: string; completed: boolean }[];
 }
 
-export function exportChecklistAsExcel(
+export async function exportChecklistAsExcel(
   checklists: ChecklistItem[],
   caseName: string,
   filename?: string
-): void {
+): Promise<void> {
+  const XLSX = await import("xlsx");
   const rows: (string | boolean)[][] = [
     ["Checkliste", caseName],
     ["Exportiert am", new Date().toLocaleDateString("de-DE")],

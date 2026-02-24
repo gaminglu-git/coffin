@@ -2,16 +2,23 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { FileSearch, Key, Lock, Menu, X, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface NavbarProps {
     variant?: "home" | "family";
     onLogout?: () => void;
+    /** Whitelabel: Anzeigename (z.B. "liebevoll bestatten") */
+    displayName?: string;
+    /** Whitelabel: Unterzeile (z.B. "minten & walter · Bonn") */
+    tagline?: string;
 }
 
-export function Navbar({ variant = "home", onLogout }: NavbarProps) {
+export function Navbar({ variant = "home", onLogout, displayName = "liebevoll bestatten", tagline = "minten & walter · Bonn" }: NavbarProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const pathname = usePathname();
+    const isHome = pathname === "/";
 
     const scrollTo = (id: string) => {
         setMobileMenuOpen(false);
@@ -27,21 +34,30 @@ export function Navbar({ variant = "home", onLogout }: NavbarProps) {
                 <div className="flex justify-between h-20 items-center">
                     {variant === "family" ? (
                         <Link href="/" className="shrink-0">
-                            <h1 className="font-serif text-2xl text-emerald-800">liebevoll bestatten</h1>
+                            <h1 className="font-serif text-2xl text-emerald-800">{displayName}</h1>
                             <p className="text-xs tracking-widest text-stone-500 uppercase">Angehörigen portal</p>
                         </Link>
-                    ) : (
+                    ) : isHome ? (
                     <div
                         className="shrink-0 cursor-pointer"
                         onClick={() => scrollTo("hero")}
                     >
                         <h1 className="font-serif text-2xl text-emerald-800">
-                            liebevoll bestatten
+                            {displayName}
                         </h1>
                         <p className="text-xs tracking-widest text-stone-500 uppercase">
-                            minten & walter · Bonn
+                            {tagline}
                         </p>
                     </div>
+                    ) : (
+                    <Link href="/" className="shrink-0">
+                        <h1 className="font-serif text-2xl text-emerald-800">
+                            {displayName}
+                        </h1>
+                        <p className="text-xs tracking-widest text-stone-500 uppercase">
+                            {tagline}
+                        </p>
+                    </Link>
                     )}
 
                     {variant === "family" ? (
@@ -54,6 +70,8 @@ export function Navbar({ variant = "home", onLogout }: NavbarProps) {
                     </div>
                     ) : (
                     <div className="hidden md:flex space-x-8 items-center">
+                        {isHome ? (
+                            <>
                         <button
                             onClick={() => scrollTo("philosophie")}
                             className="text-stone-600 hover:text-emerald-800 transition text-sm font-medium"
@@ -66,6 +84,31 @@ export function Navbar({ variant = "home", onLogout }: NavbarProps) {
                         >
                             Leistungen
                         </button>
+                            </>
+                        ) : (
+                            <>
+                        <Link href="/#philosophie" className="text-stone-600 hover:text-emerald-800 transition text-sm font-medium">
+                            Philosophie
+                        </Link>
+                        <Link href="/#leistungen" className="text-stone-600 hover:text-emerald-800 transition text-sm font-medium">
+                            Leistungen
+                        </Link>
+                            </>
+                        )}
+                        <Link
+                            href="/team"
+                            className="text-stone-600 hover:text-emerald-800 transition text-sm font-medium"
+                        >
+                            Team
+                        </Link>
+                        <Link
+                            href="/termine"
+                            className="text-stone-600 hover:text-emerald-800 transition text-sm font-medium"
+                        >
+                            Termine
+                        </Link>
+                        {isHome ? (
+                            <>
                         <Button
                             variant="ghost"
                             onClick={() => scrollTo("vorsorge")}
@@ -80,6 +123,27 @@ export function Navbar({ variant = "home", onLogout }: NavbarProps) {
                         >
                             Kontakt
                         </Button>
+                            </>
+                        ) : (
+                            <>
+                        <Link href="/#vorsorge">
+                            <Button
+                                variant="ghost"
+                                className="text-emerald-800 font-medium flex items-center gap-1 hover:text-emerald-900 hover:bg-transparent transition text-sm"
+                            >
+                                <FileSearch size={16} /> Vorsorge Planer
+                            </Button>
+                        </Link>
+                        <Link href="/#kontakt">
+                            <Button
+                                variant="outline"
+                                className="rounded-full border-emerald-800 text-emerald-800 hover:bg-emerald-800 hover:text-white transition text-sm font-medium"
+                            >
+                                Kontakt
+                            </Button>
+                        </Link>
+                            </>
+                        )}
 
                         <div className="flex items-center gap-4 border-l border-stone-300 pl-6">
                             <Link
@@ -114,6 +178,8 @@ export function Navbar({ variant = "home", onLogout }: NavbarProps) {
 
             {mobileMenuOpen && (
                 <div className="md:hidden bg-white px-4 py-4 space-y-4 shadow-lg border-t border-stone-100">
+                    {isHome ? (
+                        <>
                     <button
                         onClick={() => scrollTo("philosophie")}
                         className="block w-full text-left py-2 text-stone-700 font-medium"
@@ -126,6 +192,33 @@ export function Navbar({ variant = "home", onLogout }: NavbarProps) {
                     >
                         Leistungen
                     </button>
+                        </>
+                    ) : (
+                        <>
+                    <Link href="/#philosophie" className="block w-full text-left py-2 text-stone-700 font-medium" onClick={() => setMobileMenuOpen(false)}>
+                        Philosophie
+                    </Link>
+                    <Link href="/#leistungen" className="block w-full text-left py-2 text-stone-700 font-medium" onClick={() => setMobileMenuOpen(false)}>
+                        Leistungen
+                    </Link>
+                        </>
+                    )}
+                    <Link
+                        href="/team"
+                        className="block w-full text-left py-2 text-stone-700 font-medium"
+                        onClick={() => setMobileMenuOpen(false)}
+                    >
+                        Team
+                    </Link>
+                    <Link
+                        href="/termine"
+                        className="block w-full text-left py-2 text-stone-700 font-medium"
+                        onClick={() => setMobileMenuOpen(false)}
+                    >
+                        Termine
+                    </Link>
+                    {isHome ? (
+                        <>
                     <button
                         onClick={() => scrollTo("vorsorge")}
                         className="block w-full text-left py-2 text-emerald-800 font-bold"
@@ -138,6 +231,17 @@ export function Navbar({ variant = "home", onLogout }: NavbarProps) {
                     >
                         Kontakt
                     </button>
+                        </>
+                    ) : (
+                        <>
+                    <Link href="/#vorsorge" className="block w-full text-left py-2 text-emerald-800 font-bold" onClick={() => setMobileMenuOpen(false)}>
+                        Vorsorge planen
+                    </Link>
+                    <Link href="/#kontakt" className="block w-full text-left py-2 text-stone-700 font-medium" onClick={() => setMobileMenuOpen(false)}>
+                        Kontakt
+                    </Link>
+                        </>
+                    )}
                     <div className="border-t pt-4 space-y-4">
                         <Link
                             href="/family"

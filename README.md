@@ -53,6 +53,14 @@ npm run seed:admin
 
 Optional: `SEED_ADMIN_EMAIL`, `SEED_ADMIN_NAME`, `SEED_ADMIN_PASSWORD` setzen. Standard: walter@minten-walter.de / Walter / 2026!
 
+## Formular-Benachrichtigungen (optional)
+
+Bei neuen Formular-Einreichungen (Vorsorge, Trauerfall, Beratung) können Mitarbeiter informiert werden:
+
+- **Telegram** – kostenlos, ~5 Min Setup: [docs/TELEGRAM-EMAIL.md](docs/TELEGRAM-EMAIL.md#telegram)
+- **E-Mail** – kostenlos (Resend), ~10 Min Setup: [docs/TELEGRAM-EMAIL.md](docs/TELEGRAM-EMAIL.md#e-mail-resend)
+- **WhatsApp** – Meta Developer Account nötig: [docs/WHATSAPP.md](docs/WHATSAPP.md)
+
 ## Docker Stack Deploy (lokales Netzwerk)
 
 ### Voraussetzungen

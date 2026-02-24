@@ -39,8 +39,11 @@ export default function FamilyLogin() {
 
     return (
         <div className="min-h-screen bg-stone-100 flex items-center justify-center px-4 relative z-50">
-            <div className="absolute top-10 left-10 opacity-50 pointer-events-none hidden sm:block">
-                <Image src="/assets/hand-drawn-flower-1.svg" alt="" width={80} height={80} className="w-20 h-20" />
+            <div className="absolute top-10 left-10 opacity-35 pointer-events-none hidden sm:block">
+                <Image src="/assets/sunflower.svg" alt="" width={72} height={72} className="w-[72px] h-[72px]" />
+            </div>
+            <div className="absolute bottom-10 right-10 opacity-25 pointer-events-none hidden sm:block">
+                <Image src="/assets/eucalyptus.svg" alt="" width={64} height={64} className="w-16 h-16" />
             </div>
             <div className="absolute top-6 left-6">
                 <Link href="/" className="font-serif text-xl text-emerald-900">

@@ -1,0 +1,10 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Geschwungener Stiel -->
+  <path d="M45 95 Q35 50 65 15" stroke="#6b9080" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Blätter -->
+  <path d="M46 80 Q25 75 30 55 Q45 65 46 80" fill="#a4c3b2"/>
+  <path d="M44 60 Q65 65 60 45 Q50 50 44 60" fill="#a4c3b2"/>
+  <path d="M46 45 Q20 45 25 25 Q45 35 46 45" fill="#a4c3b2"/>
+  <path d="M52 32 Q75 25 70 10 Q60 15 52 32" fill="#a4c3b2"/>
+  <path d="M65 15 Q55 -5 45 5 Q55 15 65 15" fill="#a4c3b2"/>
+</svg>

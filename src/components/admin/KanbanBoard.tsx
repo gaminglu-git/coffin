@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, memo, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GripVertical, Clock, Trash2, Key } from "lucide-react";
 import {
     DndContext,
@@ -24,7 +25,9 @@ import { CSS } from "@dnd-kit/utilities";
 import { Case, CaseStatus, CaseType } from "@/types";
 import { stripCaseTypePrefix } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { getCases } from "@/app/actions/cases";
 import { useRealtimeTable } from "@/hooks/useRealtimeTable";
+import { queryKeys } from "@/lib/query-keys";
 
 const KANBAN_COLUMNS: { id: CaseStatus; title: string; color: string }[] = [
     { id: "Neu", title: "Neu / Erstkontakt", color: "bg-blue-100 text-blue-800 border-blue-200" },
@@ -171,8 +174,26 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ onCaseClick, caseTypeFilter = "alle" }: KanbanBoardProps) {
-    const [cases, setCases] = useState<Case[]>([]);
+    const queryClient = useQueryClient();
     const [activeId, setActiveId] = useState<string | null>(null);
+
+    const { data: cases = [] } = useQuery({
+        queryKey: queryKeys.cases(caseTypeFilter),
+        queryFn: () => getCases(caseTypeFilter),
+    });
+
+    const invalidateCases = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.cases(caseTypeFilter) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
+    }, [queryClient, caseTypeFilter]);
+
+    useEffect(() => {
+        window.addEventListener("fetch-cases", invalidateCases);
+        return () => window.removeEventListener("fetch-cases", invalidateCases);
+    }, [invalidateCases]);
+
+    useRealtimeTable({ table: "cases" }, invalidateCases);
+    useRealtimeTable({ table: "tasks" }, invalidateCases);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -183,51 +204,16 @@ export function KanbanBoard({ onCaseClick, caseTypeFilter = "alle" }: KanbanBoar
         useSensor(KeyboardSensor)
     );
 
-    const fetchCases = useCallback(async () => {
-        let query = supabase
-            .from('cases')
-            .select('*')
-            .order('position', { ascending: true })
-            .order('created_at', { ascending: false });
-
-        if (caseTypeFilter !== "alle") {
-            query = query.eq('case_type', caseTypeFilter);
-        }
-
-        const { data } = await query;
-
-        if (data) {
-            const emptyDeceased = { firstName: "", lastName: "", birthDate: "", deathDate: "", deathPlace: "", religion: "", maritalStatus: "", address: "" };
-            const emptyContact = { firstName: "", lastName: "", phone: "", email: "", relation: "", address: "" };
-            const emptyWishes = { burialType: "", specialWishes: "" };
-            setCases(data.map((c: { id: string; name: string; status: string; created_at: string; family_pin?: string; wishes?: { burialType?: string }; deceased?: unknown; contact?: unknown; checklists?: unknown; position?: number; post_care_generated?: boolean; case_type?: CaseType }) => ({
-                id: c.id,
-                name: c.name,
-                status: c.status as CaseStatus,
-                createdAt: c.created_at,
-                familyPin: c.family_pin ?? "",
-                wishes: (c.wishes ? { ...emptyWishes, ...c.wishes } : emptyWishes) as Case["wishes"],
-                deceased: (c.deceased ? { ...emptyDeceased, ...(c.deceased as object) } : emptyDeceased) as Case["deceased"],
-                contact: (c.contact ? { ...emptyContact, ...(c.contact as object) } : emptyContact) as Case["contact"],
-                checklists: (c.checklists as Case["checklists"]) ?? [],
-                notes: [],
-                memories: [],
-                position: c.position ?? 0,
-                postCareGenerated: c.post_care_generated,
-                caseType: c.case_type ?? undefined,
-            })));
-        }
-    }, [caseTypeFilter]);
-
-    useEffect(() => {
-        fetchCases();
-        const handleFetch = () => fetchCases();
-        window.addEventListener('fetch-cases', handleFetch);
-        return () => window.removeEventListener('fetch-cases', handleFetch);
-    }, [fetchCases]);
-
-    useRealtimeTable({ table: "cases" }, fetchCases);
-    useRealtimeTable({ table: "tasks" }, fetchCases);
+    const setCases = useCallback(
+        (updater: Case[] | ((prev: Case[]) => Case[])) => {
+            queryClient.setQueryData(
+                queryKeys.cases(caseTypeFilter),
+                (old: Case[] | undefined) =>
+                    typeof updater === "function" ? updater(old ?? []) : updater
+            );
+        },
+        [queryClient, caseTypeFilter]
+    );
 
     const handleDragStart = (event: DragStartEvent) => {
         setActiveId(event.active.id as string);
@@ -326,7 +312,7 @@ export function KanbanBoard({ onCaseClick, caseTypeFilter = "alle" }: KanbanBoar
 
         if (error) {
             console.error("Failed to update position:", error);
-            fetchCases(); // Rollback
+            invalidateCases(); // Rollback
         } else if (newStatus === 'Abgeschlossen' && !activeItem.postCareGenerated) {
             // AUTOMATED POST-FUNERAL CARE (Nachsorge)
             // Extract family name: prefer contact lastName, fallback to deceased lastName, then fallback to case name part
@@ -368,7 +354,9 @@ export function KanbanBoard({ onCaseClick, caseTypeFilter = "alle" }: KanbanBoar
             if (!taskError) {
                 // Mark post care as generated in DB and state
                 await supabase.from('cases').update({ post_care_generated: true }).eq('id', activeIdStr);
-                setCases(prev => prev.map(c => c.id === activeIdStr ? { ...c, postCareGenerated: true } : c));
+                queryClient.setQueryData(queryKeys.cases(caseTypeFilter), (prev: Case[] | undefined) =>
+                    (prev ?? []).map(c => c.id === activeIdStr ? { ...c, postCareGenerated: true } : c)
+                );
             } else {
                 console.error("Failed to generate post-care tasks:", taskError);
             }
@@ -396,7 +384,7 @@ export function KanbanBoard({ onCaseClick, caseTypeFilter = "alle" }: KanbanBoar
                                 .sort((a, b) => (a.position || 0) - (b.position || 0))
                             }
                             onCaseClick={onCaseClick ?? (() => {})}
-                            onDelete={fetchCases}
+                            onDelete={invalidateCases}
                         />
                     ))}
                 </div>

@@ -1,0 +1,12 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Geschwungener Stiel -->
+  <path d="M50 95 Q40 50 55 5" stroke="#78a083" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Blätter (Ellipsen in verschiedenen Winkeln) -->
+  <ellipse cx="38" cy="75" rx="14" ry="8" transform="rotate(30 38 75)" fill="#94b49f" />
+  <ellipse cx="60" cy="65" rx="12" ry="7" transform="rotate(-40 60 65)" fill="#678c6e" />
+  <ellipse cx="36" cy="50" rx="13" ry="8" transform="rotate(20 36 50)" fill="#94b49f" />
+  <ellipse cx="62" cy="40" rx="11" ry="6.5" transform="rotate(-30 62 40)" fill="#678c6e" />
+  <ellipse cx="40" cy="25" rx="12" ry="7" transform="rotate(40 40 25)" fill="#94b49f" />
+  <ellipse cx="58" cy="15" rx="10" ry="6" transform="rotate(-20 58 15)" fill="#678c6e" />
+  <ellipse cx="50" cy="5" rx="11" ry="6" transform="rotate(-80 50 5)" fill="#7ea886" />
+</svg>

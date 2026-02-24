@@ -2,15 +2,22 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Plus, CheckCircle, Trash2, Clock, List, Calendar, Pencil, X, Package } from "lucide-react";
 import { Appointment, Task, InventoryItem } from "@/types";
 import { supabase } from "@/lib/supabase";
+import { getTasks } from "@/app/actions/tasks";
+import { getAppointments } from "@/app/actions/appointments";
+import { getCasesList } from "@/app/actions/cases";
 import { getInventoryItems, assignInventoryItemToCaseAction } from "@/app/actions/inventory";
 import type { Employee } from "@/app/actions/employees";
 import { getTimeEntries } from "@/app/actions/time-entries";
+import { getEvents } from "@/app/actions/events";
 import type { TimeEntryEvent } from "@/app/actions/time-entries";
 import { CalendarView } from "./CalendarView";
+import { AgendaSection, computeReminderAt, type ReminderMinutes } from "./AgendaSection";
 import { useRealtimeTable } from "@/hooks/useRealtimeTable";
+import { queryKeys } from "@/lib/query-keys";
 
 type ViewMode = "list" | "calendar";
 
@@ -21,24 +28,59 @@ interface TeamDashboardProps {
 }
 
 export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboardProps) {
+    const queryClient = useQueryClient();
     const [viewMode, setViewMode] = useState<ViewMode>("list");
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [cases, setCases] = useState<{ id: string; name: string; contact?: { firstName?: string; lastName?: string } }[]>([]);
+
+    const { data: tasks = [] } = useQuery({ queryKey: queryKeys.tasks, queryFn: getTasks });
+    const { data: appointments = [] } = useQuery({ queryKey: queryKeys.appointments, queryFn: getAppointments });
+    const { data: cases = [] } = useQuery({ queryKey: queryKeys.casesList, queryFn: getCasesList });
+    const { data: inventoryData } = useQuery({
+        queryKey: queryKeys.inventory({}),
+        queryFn: async () => {
+            const [assigned, all] = await Promise.all([
+                getInventoryItems({ assignedOnly: true }),
+                getInventoryItems(),
+            ]);
+            return { assigned, all };
+        },
+    });
+    const assignedItems = inventoryData?.assigned ?? [];
+    const allItems = inventoryData?.all ?? [];
+
+    const now = new Date();
+    const timeEntriesFrom = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const timeEntriesTo = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+    const { data: timeEntries = [] } = useQuery({
+        queryKey: queryKeys.timeEntries(taskFilter === "Alle" ? null : taskFilter, timeEntriesFrom, timeEntriesTo),
+        queryFn: () => getTimeEntries(taskFilter === "Alle" ? null : taskFilter, timeEntriesFrom, timeEntriesTo),
+    });
+    const eventsFrom = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const eventsTo = new Date(now.getFullYear(), now.getMonth() + 3, 0);
+    const { data: companyEvents = [] } = useQuery({
+        queryKey: queryKeys.events(eventsFrom, eventsTo),
+        queryFn: () => getEvents(eventsFrom, eventsTo),
+    });
 
     const [newTaskTitle, setNewTaskTitle] = useState("");
     const [newTaskAssigneeId, setNewTaskAssigneeId] = useState<string | null>(null);
     const [newTaskDueDate, setNewTaskDueDate] = useState("");
     const [newTaskCaseId, setNewTaskCaseId] = useState<string | null>(null);
+    const [newTaskReminder, setNewTaskReminder] = useState<ReminderMinutes>("");
 
     const [newApptTitle, setNewApptTitle] = useState("");
     const [newApptDate, setNewApptDate] = useState("");
+    const [newApptEndDate, setNewApptEndDate] = useState("");
     const [newApptCaseId, setNewApptCaseId] = useState<string | null>(null);
+    const [newApptAssigneeId, setNewApptAssigneeId] = useState<string | null>(null);
+    const [newApptReminder, setNewApptReminder] = useState<ReminderMinutes>("");
 
     const [editingApptId, setEditingApptId] = useState<string | null>(null);
     const [editApptTitle, setEditApptTitle] = useState("");
     const [editApptDate, setEditApptDate] = useState("");
+    const [editApptEndDate, setEditApptEndDate] = useState("");
     const [editApptCaseId, setEditApptCaseId] = useState<string | null>(null);
+    const [editApptAssigneeId, setEditApptAssigneeId] = useState<string | null>(null);
+    const [editApptReminder, setEditApptReminder] = useState<ReminderMinutes>("");
 
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
     const [editTaskTitle, setEditTaskTitle] = useState("");
@@ -46,99 +88,34 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
     const [editTaskAssigneeId, setEditTaskAssigneeId] = useState<string | null>(null);
     const [editTaskCaseId, setEditTaskCaseId] = useState<string | null>(null);
     const [editTaskCompleted, setEditTaskCompleted] = useState(false);
+    const [editTaskReminder, setEditTaskReminder] = useState<ReminderMinutes>("");
 
-    const [assignedItems, setAssignedItems] = useState<InventoryItem[]>([]);
-    const [allItems, setAllItems] = useState<InventoryItem[]>([]);
     const [assignItemId, setAssignItemId] = useState<string | null>(null);
     const [assignCaseId, setAssignCaseId] = useState<string | null>(null);
     const [assignStatus, setAssignStatus] = useState<"reserved" | "assigned" | "delivered">("assigned");
 
-    const [timeEntries, setTimeEntries] = useState<TimeEntryEvent[]>([]);
     const [showTimeEntries, setShowTimeEntries] = useState(true);
 
-    const fetchData = useCallback(async () => {
-        const { data: taskData } = await supabase
-            .from('tasks')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (taskData) {
-            setTasks(taskData.map((t: { id: string; title: string; assignee?: string; assignee_id?: string | null; due_date?: string | null; completed?: boolean; created_at: string; case_id?: string | null }) => ({
-                id: t.id,
-                title: t.title,
-                assignee: t.assignee ?? "Alle",
-                assigneeId: t.assignee_id ?? null,
-                dueDate: t.due_date ?? null,
-                completed: t.completed ?? false,
-                createdAt: t.created_at,
-                caseId: t.case_id ?? null
-            })));
-        }
-
-        // Fetch appointments
-        const { data: apptData } = await supabase
-            .from('appointments')
-            .select('*')
-            .order('appointment_date', { ascending: true });
-
-        if (apptData) {
-            setAppointments(apptData.map((a: { id: string; title: string; appointment_date: string; created_at: string; case_id?: string | null }) => ({
-                id: a.id,
-                title: a.title,
-                date: a.appointment_date,
-                createdAt: a.created_at,
-                caseId: a.case_id ?? null
-            })));
-        }
-
-        // Fetch cases for optional case linking (incl. contact for Verbliebene-Anzeige)
-        const { data: caseData } = await supabase.from('cases').select('id, name, contact').order('name');
-        setCases((caseData ?? []).map((c: { id: string; name: string; contact?: { firstName?: string; lastName?: string } }) => ({
-            id: c.id,
-            name: c.name,
-            contact: c.contact ?? undefined
-        })));
-
-        // Fetch inventory items
-        try {
-            const [assigned, all] = await Promise.all([
-                getInventoryItems({ assignedOnly: true }),
-                getInventoryItems(),
-            ]);
-            setAssignedItems(assigned);
-            setAllItems(all);
-        } catch {
-            setAssignedItems([]);
-            setAllItems([]);
-        }
-
-    }, []);
-
-    const fetchTimeEntries = useCallback(async () => {
-        const now = new Date();
-        const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const to = new Date(now.getFullYear(), now.getMonth() + 2, 0);
-        const entries = await getTimeEntries(taskFilter === "Alle" ? null : taskFilter, from, to);
-        setTimeEntries(entries);
-    }, [taskFilter]);
+    const invalidateAll = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
+        queryClient.invalidateQueries({ queryKey: queryKeys.appointments });
+        queryClient.invalidateQueries({ queryKey: queryKeys.casesList });
+        queryClient.invalidateQueries({ queryKey: queryKeys.inventory({}) });
+        queryClient.invalidateQueries({ predicate: (q) => (q.queryKey as string[])[0] === "timeEntries" });
+        queryClient.invalidateQueries({ predicate: (q) => (q.queryKey as string[])[0] === "events" });
+    }, [queryClient]);
 
     useEffect(() => {
-        fetchData();
-        // Listen for global refresh events
-        const handleRefresh = () => fetchData();
-        window.addEventListener('fetch-cases', handleRefresh);
-        return () => window.removeEventListener('fetch-cases', handleRefresh);
-    }, [fetchData]);
+        window.addEventListener("fetch-cases", invalidateAll);
+        return () => window.removeEventListener("fetch-cases", invalidateAll);
+    }, [invalidateAll]);
 
-    useRealtimeTable({ table: "tasks" }, fetchData);
-    useRealtimeTable({ table: "appointments" }, fetchData);
-    useRealtimeTable({ table: "cases" }, fetchData);
-    useRealtimeTable({ table: "inventory_items" }, fetchData);
-    useRealtimeTable({ table: "employee_time_entries" }, fetchTimeEntries);
-
-    useEffect(() => {
-        fetchTimeEntries();
-    }, [fetchTimeEntries]);
+    useRealtimeTable({ table: "tasks" }, invalidateAll);
+    useRealtimeTable({ table: "appointments" }, invalidateAll);
+    useRealtimeTable({ table: "cases" }, invalidateAll);
+    useRealtimeTable({ table: "inventory_items" }, invalidateAll);
+    useRealtimeTable({ table: "employee_time_entries" }, invalidateAll);
+    useRealtimeTable({ table: "events" }, invalidateAll);
 
     const filteredTasks = tasks
         .filter((t) => {
@@ -162,14 +139,16 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
             assignee_id: newTaskAssigneeId || null,
             due_date: newTaskDueDate || null,
             completed: false,
-            case_id: newTaskCaseId || null
+            case_id: newTaskCaseId || null,
+            reminder_at: newTaskDueDate ? computeReminderAt(newTaskDueDate + "T09:00:00", newTaskReminder) : null,
         };
 
         const { error } = await supabase.from('tasks').insert(newTask);
         if (!error) {
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
             setNewTaskTitle("");
             setNewTaskDueDate("");
+            setNewTaskReminder("");
         } else {
             console.error("Failed to add task:", error);
         }
@@ -182,14 +161,20 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
         const newAppt = {
             title: newApptTitle,
             appointment_date: newApptDate,
-            case_id: newApptCaseId || null
+            end_at: newApptEndDate || null,
+            case_id: newApptCaseId || null,
+            assignee_id: newApptAssigneeId || null,
+            assignee: newApptAssigneeId ? (employees.find((e) => e.id === newApptAssigneeId)?.display_name ?? "Alle") : "Alle",
+            reminder_at: computeReminderAt(newApptDate, newApptReminder),
         };
 
         const { error } = await supabase.from('appointments').insert(newAppt);
         if (!error) {
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: queryKeys.appointments });
             setNewApptTitle("");
             setNewApptDate("");
+            setNewApptEndDate("");
+            setNewApptReminder("");
         } else {
             console.error("Failed to add appointment:", error);
         }
@@ -199,15 +184,33 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
         setEditingApptId(appt.id);
         setEditApptTitle(appt.title);
         setEditApptDate(appt.date.slice(0, 16));
+        setEditApptEndDate(appt.endAt ? appt.endAt.slice(0, 16) : "");
         setEditApptCaseId(appt.caseId ?? null);
+        setEditApptAssigneeId(appt.assigneeId ?? null);
+        setEditApptReminder(getReminderFromAt(appt.date, appt.reminderAt));
     };
 
     const cancelEditAppointment = () => {
         setEditingApptId(null);
         setEditApptTitle("");
         setEditApptDate("");
+        setEditApptEndDate("");
         setEditApptCaseId(null);
+        setEditApptAssigneeId(null);
+        setEditApptReminder("");
     };
+
+    function getReminderFromAt(dateIso: string, reminderAt: string | null | undefined): ReminderMinutes {
+        if (!reminderAt || !dateIso) return "";
+        const d = new Date(dateIso);
+        const r = new Date(reminderAt);
+        const mins = Math.round((d.getTime() - r.getTime()) / 60000);
+        if (mins <= 15) return "15";
+        if (mins <= 60) return "60";
+        if (mins <= 1440) return "1440";
+        if (mins <= 4320) return "4320";
+        return "";
+    }
 
     const handleUpdateAppointment = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -218,12 +221,16 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
             .update({
                 title: editApptTitle,
                 appointment_date: editApptDate,
-                case_id: editApptCaseId || null
+                end_at: editApptEndDate || null,
+                case_id: editApptCaseId || null,
+                assignee_id: editApptAssigneeId || null,
+                assignee: editApptAssigneeId ? (employees.find((e) => e.id === editApptAssigneeId)?.display_name ?? "Alle") : "Alle",
+                reminder_at: computeReminderAt(editApptDate, editApptReminder),
             })
             .eq('id', editingApptId);
 
         if (!error) {
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: queryKeys.appointments });
             cancelEditAppointment();
         } else {
             console.error("Failed to update appointment:", error);
@@ -233,7 +240,7 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
     const deleteAppointment = async (id: string) => {
         if (!confirm("Termin löschen?")) return;
         const { error } = await supabase.from('appointments').delete().eq('id', id);
-        if (!error) fetchData();
+        if (!error) queryClient.invalidateQueries({ queryKey: queryKeys.appointments });
     };
 
     const getCaseName = (caseId: string | null | undefined) =>
@@ -264,7 +271,7 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
             .eq('id', task.id);
 
         if (!error) {
-            setTasks(tasks.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
+            queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
         }
     };
 
@@ -272,7 +279,7 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
         if (!confirm("Aufgabe wirklich löschen?")) return;
         const { error } = await supabase.from('tasks').delete().eq('id', id);
         if (!error) {
-            setTasks(tasks.filter(t => t.id !== id));
+            queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
         }
     };
 
@@ -283,6 +290,7 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
         setEditTaskAssigneeId(task.assigneeId ?? null);
         setEditTaskCaseId(task.caseId ?? null);
         setEditTaskCompleted(task.completed);
+        setEditTaskReminder(task.dueDate ? getReminderFromAt(task.dueDate + "T09:00:00", task.reminderAt) : "");
     };
 
     const cancelEditTask = () => {
@@ -292,6 +300,7 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
         setEditTaskAssigneeId(null);
         setEditTaskCaseId(null);
         setEditTaskCompleted(false);
+        setEditTaskReminder("");
     };
 
     const handleAssignItem = async (e: React.FormEvent) => {
@@ -299,7 +308,7 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
         if (!assignItemId || !assignCaseId) return;
         const result = await assignInventoryItemToCaseAction(assignItemId, assignCaseId, assignStatus);
         if (result.success) {
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: queryKeys.inventory({}) });
             setAssignItemId(null);
             setAssignCaseId(null);
         } else {
@@ -310,7 +319,7 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
     const handleUnassignItem = async (itemId: string) => {
         if (!confirm("Gegenstand von Fall trennen?")) return;
         const result = await assignInventoryItemToCaseAction(itemId, null);
-        if (result.success) fetchData();
+        if (result.success) queryClient.invalidateQueries({ queryKey: queryKeys.inventory({}) });
     };
 
     const handleUpdateTask = async (e: React.FormEvent) => {
@@ -325,12 +334,13 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
                 assignee_id: editTaskAssigneeId || null,
                 assignee: editTaskAssigneeId ? (employees.find((e) => e.id === editTaskAssigneeId)?.display_name ?? "Alle") : "Alle",
                 case_id: editTaskCaseId || null,
-                completed: editTaskCompleted
+                completed: editTaskCompleted,
+                reminder_at: editTaskDueDate ? computeReminderAt(editTaskDueDate + "T09:00:00", editTaskReminder) : null,
             })
             .eq('id', editingTaskId);
 
         if (!error) {
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
             cancelEditTask();
         } else {
             console.error("Failed to update task:", error);
@@ -377,6 +387,7 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
                 <CalendarView
                     appointments={appointments}
                     tasks={filteredTasks}
+                    companyEvents={companyEvents}
                     timeEntries={timeEntries}
                     employees={employees}
                     showTimeEntries={showTimeEntries}
@@ -393,126 +404,68 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
                     }}
                     onDeleteAppointment={deleteAppointment}
                     onDeleteTask={deleteTask}
+                    onCreateAppointment={async (data) => {
+                        const newAppt = {
+                            title: data.title,
+                            appointment_date: data.start,
+                            end_at: data.end || null,
+                            case_id: data.caseId || null,
+                            assignee_id: data.assigneeId || null,
+                            assignee: data.assigneeId ? (employees.find((e) => e.id === data.assigneeId)?.display_name ?? "Alle") : "Alle",
+                            reminder_at: data.reminderAt || null,
+                        };
+                        const { error } = await supabase.from("appointments").insert(newAppt);
+                        if (!error) {
+                            queryClient.invalidateQueries({ queryKey: queryKeys.appointments });
+                        } else {
+                            console.error("Failed to add appointment:", error);
+                            throw error;
+                        }
+                    }}
                 />
             ) : (
-        <div className="grid lg:grid-cols-12 gap-8 h-[70vh]">
-            {/* Agenda */}
-            <div className="lg:col-span-4 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full">
-                <div className="p-6 border-b border-gray-100">
-                    <h3 className="text-xl font-serif text-mw-green flex items-center gap-2 mb-4">
-                        <CalendarDays size={20} /> Agenda
-                    </h3>
-                    <form onSubmit={handleAddAppointment} className="flex flex-col gap-2">
-                        <input
-                            type="text"
-                            placeholder="Neuer Termin..."
-                            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none text-sm"
-                            value={newApptTitle}
-                            onChange={(e) => setNewApptTitle(e.target.value)}
-                            required
-                        />
-                        <select
-                            value={newApptCaseId ?? ""}
-                            onChange={(e) => setNewApptCaseId(e.target.value || null)}
-                            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
-                        >
-                            <option value="">Fall (optional)</option>
-                            {cases.map((c) => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
-                        <div className="flex gap-2">
-                            <input
-                                type="datetime-local"
-                                className="flex-1 p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
-                                value={newApptDate}
-                                onChange={(e) => setNewApptDate(e.target.value)}
-                                required
-                            />
-                            <button type="submit" className="bg-mw-green text-white p-2.5 rounded-xl transition hover:bg-mw-green-dark">
-                                <Plus size={18} />
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                    {appointments.length === 0 ? (
-                        <p className="text-sm text-center text-gray-400 mt-8 italic">Keine anstehenden Termine.</p>
-                    ) : (
-                        appointments.map((appt) => (
-                            <div key={appt.id} className="p-3 rounded-xl border bg-white">
-                                {editingApptId === appt.id ? (
-                                    <form onSubmit={handleUpdateAppointment} className="flex flex-col gap-2">
-                                        <input
-                                            type="text"
-                                            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none text-sm"
-                                            value={editApptTitle}
-                                            onChange={(e) => setEditApptTitle(e.target.value)}
-                                            required
-                                        />
-                                        <select
-                                            value={editApptCaseId ?? ""}
-                                            onChange={(e) => setEditApptCaseId(e.target.value || null)}
-                                            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
-                                        >
-                                            <option value="">Fall (optional)</option>
-                                            {cases.map((c) => (
-                                                <option key={c.id} value={c.id}>{c.name}</option>
-                                            ))}
-                                        </select>
-                                        <input
-                                            type="datetime-local"
-                                            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
-                                            value={editApptDate}
-                                            onChange={(e) => setEditApptDate(e.target.value)}
-                                            required
-                                        />
-                                        <div className="flex gap-2">
-                                            <button type="submit" className="flex-1 bg-mw-green text-white p-2 rounded-xl text-sm font-medium hover:bg-mw-green-dark">
-                                                Speichern
-                                            </button>
-                                            <button type="button" onClick={cancelEditAppointment} className="p-2 text-gray-500 hover:text-gray-700 rounded-xl border border-gray-200">
-                                                <X size={16} />
-                                            </button>
-                                        </div>
-                                    </form>
-                                ) : (
-                                    <div className="flex justify-between items-center group">
-                                        <div>
-                                            <div className="text-xs font-bold text-mw-green-light mb-1">
-                                                {new Date(appt.date).toLocaleDateString("de-DE")} - {new Date(appt.date).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
-                                            </div>
-                                            <h5 className="font-medium text-sm">{appt.title}</h5>
-                                            {appt.caseId && getCaseDisplayLabel(appt.caseId) && (
-                                                <span className="text-[10px] text-gray-500 mt-0.5 block">{getCaseDisplayLabel(appt.caseId)}</span>
-                                            )}
-                                        </div>
-                                        <div className="flex gap-1">
-                                            <button
-                                                onClick={() => startEditAppointment(appt)}
-                                                className="p-1.5 text-gray-300 hover:text-mw-green opacity-0 group-hover:opacity-100 transition"
-                                                title="Bearbeiten"
-                                            >
-                                                <Pencil size={14} />
-                                            </button>
-                                            <button
-                                                onClick={() => deleteAppointment(appt.id)}
-                                                className="p-1.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
-                                                title="Löschen"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))
-                    )}
-                </div>
+        <div className="grid lg:grid-cols-12 gap-6 lg:gap-8 lg:h-[55vh]">
+            <div className="lg:col-span-4 min-h-0 flex flex-col lg:h-full">
+            <AgendaSection
+                appointments={appointments}
+                cases={cases}
+                employees={employees}
+                newApptTitle={newApptTitle}
+                newApptDate={newApptDate}
+                newApptEndDate={newApptEndDate}
+                newApptCaseId={newApptCaseId}
+                newApptAssigneeId={newApptAssigneeId}
+                newApptReminder={newApptReminder}
+                editingApptId={editingApptId}
+                editApptTitle={editApptTitle}
+                editApptDate={editApptDate}
+                editApptEndDate={editApptEndDate}
+                editApptCaseId={editApptCaseId}
+                editApptAssigneeId={editApptAssigneeId}
+                editApptReminder={editApptReminder}
+                onNewApptTitleChange={setNewApptTitle}
+                onNewApptDateChange={setNewApptDate}
+                onNewApptEndDateChange={setNewApptEndDate}
+                onNewApptCaseIdChange={setNewApptCaseId}
+                onNewApptAssigneeIdChange={setNewApptAssigneeId}
+                onNewApptReminderChange={setNewApptReminder}
+                onEditApptTitleChange={setEditApptTitle}
+                onEditApptDateChange={setEditApptDate}
+                onEditApptEndDateChange={setEditApptEndDate}
+                onEditApptCaseIdChange={setEditApptCaseId}
+                onEditApptAssigneeIdChange={setEditApptAssigneeId}
+                onEditApptReminderChange={setEditApptReminder}
+                onAddAppointment={handleAddAppointment}
+                onUpdateAppointment={handleUpdateAppointment}
+                onStartEdit={startEditAppointment}
+                onCancelEdit={cancelEditAppointment}
+                onDelete={deleteAppointment}
+                getCaseDisplayLabel={getCaseDisplayLabel}
+            />
             </div>
 
             {/* Task List */}
-            <div className="lg:col-span-8 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full">
+            <div className="lg:col-span-8 min-h-0 lg:h-full bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
                 <div className="p-6 border-b border-gray-100">
                     <h3 className="text-xl font-serif text-mw-green flex items-center gap-2 mb-4">
                         <CheckCircle size={20} /> To-Do Liste
@@ -521,12 +474,12 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
                         <input
                             type="text"
                             placeholder="Aufgabe eingeben..."
-                            className="flex-1 p-3 bg-white rounded-xl shadow-sm outline-none text-sm"
+                            className="flex-1 min-w-0 p-3 bg-white rounded-xl shadow-sm outline-none text-sm"
                             value={newTaskTitle}
                             onChange={(e) => setNewTaskTitle(e.target.value)}
                             required
                         />
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 min-w-0">
                             <select
                                 value={newTaskCaseId ?? ""}
                                 onChange={(e) => setNewTaskCaseId(e.target.value || null)}
@@ -553,6 +506,17 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
                                 value={newTaskDueDate}
                                 onChange={(e) => setNewTaskDueDate(e.target.value)}
                             />
+                            <select
+                                value={newTaskReminder}
+                                onChange={(e) => setNewTaskReminder(e.target.value as ReminderMinutes)}
+                                className="w-36 p-3 bg-white rounded-xl shadow-sm outline-none text-sm"
+                            >
+                                <option value="">Keine Erinnerung</option>
+                                <option value="15">15 Min vorher</option>
+                                <option value="60">1 Std vorher</option>
+                                <option value="1440">1 Tag vorher</option>
+                                <option value="4320">3 Tage vorher</option>
+                            </select>
                             <button type="submit" className="bg-mw-green text-white px-4 py-3 rounded-xl shadow-sm hover:bg-mw-green-dark transition">
                                 <Plus size={20} />
                             </button>
@@ -602,6 +566,17 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
                                                 value={editTaskDueDate}
                                                 onChange={(e) => setEditTaskDueDate(e.target.value)}
                                             />
+                                            <select
+                                                value={editTaskReminder}
+                                                onChange={(e) => setEditTaskReminder(e.target.value as ReminderMinutes)}
+                                                className="w-36 p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                                            >
+                                                <option value="">Keine Erinnerung</option>
+                                                <option value="15">15 Min vorher</option>
+                                                <option value="60">1 Std vorher</option>
+                                                <option value="1440">1 Tag vorher</option>
+                                                <option value="4320">3 Tage vorher</option>
+                                            </select>
                                         </div>
                                         <label className="flex items-center gap-2 text-sm cursor-pointer">
                                             <input
@@ -679,27 +654,27 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
             )}
 
             {/* Lager-Zuordnungen – immer sichtbar */}
-            <div className="mt-6 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col">
-                <div className="p-6 border-b border-gray-100 flex flex-wrap justify-between items-center gap-4">
-                    <h3 className="text-xl font-serif text-mw-green flex items-center gap-2">
-                        <Package size={20} /> Lager – Zugewiesene Gegenstände
+            <div className="mt-6 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+                <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-3">
+                    <h3 className="text-lg sm:text-xl font-serif text-mw-green flex items-center gap-2 shrink-0">
+                        <Package size={20} className="shrink-0" /> Lager – Zugewiesene Gegenstände
                     </h3>
                     <Link
-                        href="/admin/inventory"
-                        className="text-sm text-mw-green hover:text-mw-green-dark font-medium"
+                        href="/admin/leistungen/lager"
+                        className="text-sm text-mw-green hover:text-mw-green-dark font-medium shrink-0"
                     >
                         Zum Lager →
                     </Link>
                 </div>
-                <div className="p-6 space-y-4">
+                <div className="p-4 sm:p-6 space-y-4">
                     {viewMode === "list" && (
-                        <form onSubmit={handleAssignItem} className="flex flex-wrap gap-2 items-end bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <div>
+                        <form onSubmit={handleAssignItem} className="flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-3 sm:items-end bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <div className="min-w-0 flex-1 sm:flex-initial sm:w-48">
                                 <label className="block text-xs text-gray-500 mb-1">Gegenstand</label>
                                 <select
                                     value={assignItemId ?? ""}
                                     onChange={(e) => setAssignItemId(e.target.value || null)}
-                                    className="p-2.5 bg-white border border-gray-200 rounded-xl text-sm w-48"
+                                    className="w-full sm:w-48 p-2.5 bg-white border border-gray-200 rounded-xl text-sm min-w-0"
                                     required
                                 >
                                     <option value="">Auswählen...</option>
@@ -710,12 +685,12 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
                                         ))}
                                 </select>
                             </div>
-                            <div>
+                            <div className="min-w-0 flex-1 sm:flex-initial sm:w-48">
                                 <label className="block text-xs text-gray-500 mb-1">Fall</label>
                                 <select
                                     value={assignCaseId ?? ""}
                                     onChange={(e) => setAssignCaseId(e.target.value || null)}
-                                    className="p-2.5 bg-white border border-gray-200 rounded-xl text-sm w-48"
+                                    className="w-full sm:w-48 p-2.5 bg-white border border-gray-200 rounded-xl text-sm min-w-0"
                                     required
                                 >
                                     <option value="">Auswählen...</option>
@@ -724,25 +699,25 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
                                     ))}
                                 </select>
                             </div>
-                            <div>
+                            <div className="min-w-0 flex-1 sm:flex-initial sm:w-36">
                                 <label className="block text-xs text-gray-500 mb-1">Status</label>
                                 <select
                                     value={assignStatus}
                                     onChange={(e) => setAssignStatus(e.target.value as "reserved" | "assigned" | "delivered")}
-                                    className="p-2.5 bg-white border border-gray-200 rounded-xl text-sm w-36"
+                                    className="w-full sm:w-36 p-2.5 bg-white border border-gray-200 rounded-xl text-sm min-w-0"
                                 >
                                     <option value="reserved">Reserviert</option>
                                     <option value="assigned">Zugewiesen</option>
                                     <option value="delivered">Geliefert</option>
                                 </select>
                             </div>
-                            <button type="submit" className="bg-mw-green text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-mw-green-dark">
+                            <button type="submit" className="bg-mw-green text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-mw-green-dark shrink-0 w-full sm:w-auto">
                                 Zuweisen
                             </button>
                         </form>
                     )}
                     {assignedItems.length === 0 ? (
-                        <p className="text-sm text-gray-400 italic">Keine Gegenstände einem Fall zugeordnet.</p>
+                        <p className="text-sm text-gray-400 italic pt-1">Keine Gegenstände einem Fall zugeordnet.</p>
                     ) : (
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             {assignedItems.map((item) => (
