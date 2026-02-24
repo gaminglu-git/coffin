@@ -6,7 +6,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { FileText, Printer, CheckCircle, MessageSquare, Heart, X, Key, ImageIcon, Mail, CalendarDays, Send, FileDown, FileSpreadsheet, Phone, MoreHorizontal, Copy, Check, Settings2, ChevronDown } from "lucide-react";
 import { PhotoGallery } from "@/components/admin/PhotoGallery";
 import { listCommunications, createCommunication } from "@/app/actions/communications";
-import { updateCaseChecklists, updateCaseAction } from "@/app/actions/cases";
+import { updateCaseChecklists, updateCaseAction, getCaseWithDetails } from "@/app/actions/cases";
+import { getTasksByCaseId } from "@/app/actions/tasks";
+import { getAppointmentsByCaseId } from "@/app/actions/appointments";
 import { exportChecklistAsPDF } from "@/lib/export-pdf";
 import { exportChecklistAsExcel } from "@/lib/export-excel";
 import { exportChecklistAsDocx } from "@/lib/export-docx";
@@ -401,74 +403,22 @@ export function CaseDetailModal({ activeCaseId, onClose }: { activeCaseId: strin
 
     const fetchCaseData = useCallback(async () => {
         if (!activeCaseId) return;
-        const { data, error } = await supabase
-            .from("cases")
-            .select("*, notes(*), memories(*), family_photos(*)")
-            .eq("id", activeCaseId)
-            .single();
-
-        if (data && !error) {
-            if (data.notes) data.notes.sort((a: { created_at: string }, b: { created_at: string }) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            if (data.memories) data.memories.sort((a: { created_at: string }, b: { created_at: string }) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-            const familyPhotos = data.family_photos?.map((p: { id: string; storage_path: string; uploaded_by_name?: string; caption?: string | null; created_at: string }) => ({
-                id: p.id,
-                storagePath: p.storage_path,
-                url: supabase.storage.from("family-files").getPublicUrl(p.storage_path).data.publicUrl,
-                uploadedByName: p.uploaded_by_name,
-                caption: p.caption,
-                createdAt: p.created_at,
-            })) || [];
-
-            setCurrentCase({
-                id: data.id,
-                name: data.name,
-                status: data.status,
-                createdAt: data.created_at,
-                familyPin: data.family_pin,
-                wishes: data.wishes,
-                deceased: data.deceased,
-                contact: data.contact,
-                checklists: data.checklists,
-                caseType: data.case_type ?? undefined,
-                notes: data.notes?.map((n: { id: string; text: string; author: string; created_at: string }) => ({ id: n.id, text: n.text, author: n.author, createdAt: n.created_at })) || [],
-                memories: data.memories?.map((m: { id: string; text: string; created_at: string }) => ({ id: m.id, text: m.text, createdAt: m.created_at })) || [],
-                familyPhotos,
-            });
+        const data = await getCaseWithDetails(activeCaseId);
+        if (data) {
+            setCurrentCase(data);
         }
     }, [activeCaseId]);
 
     const fetchCaseLinkedData = useCallback(async () => {
         if (!activeCaseId) return;
-        const [tasksRes, apptsRes] = await Promise.all([
-            supabase.from("tasks").select("*").eq("case_id", activeCaseId).order("created_at", { ascending: false }),
-            supabase.from("appointments").select("*").eq("case_id", activeCaseId).order("appointment_date", { ascending: true }),
-        ]);
-        if (tasksRes.data) {
-            setCaseTasks(tasksRes.data.map((t: { id: string; title: string; assignee?: string; assignee_id?: string | null; due_date?: string | null; completed?: boolean; created_at: string; case_id?: string | null }) => ({
-                id: t.id,
-                title: t.title,
-                assignee: t.assignee ?? "Alle",
-                assigneeId: t.assignee_id ?? null,
-                dueDate: t.due_date ?? null,
-                completed: t.completed ?? false,
-                createdAt: t.created_at,
-                caseId: t.case_id ?? null,
-            })));
-        }
-        if (apptsRes.data) {
-            setCaseAppointments(apptsRes.data.map((a: { id: string; title: string; appointment_date: string; created_at: string; case_id?: string | null }) => ({
-                id: a.id,
-                title: a.title,
-                date: a.appointment_date,
-                createdAt: a.created_at,
-                caseId: a.case_id ?? null,
-            })));
-        }
-        const [comms, contactsList] = await Promise.all([
+        const [tasks, appts, comms, contactsList] = await Promise.all([
+            getTasksByCaseId(activeCaseId),
+            getAppointmentsByCaseId(activeCaseId),
             listCommunications({ caseId: activeCaseId }),
             listContacts({ caseId: activeCaseId }),
         ]);
+        setCaseTasks(tasks);
+        setCaseAppointments(appts);
         setCaseCommunications(comms);
         setCaseContacts(contactsList.map((c) => ({ id: c.id, displayName: c.displayName })));
     }, [activeCaseId]);

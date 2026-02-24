@@ -2,12 +2,28 @@
 
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import type { View, SlotInfo } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { de } from "date-fns/locale";
-import { ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { ChevronRight, Pencil, Trash2, Plus } from "lucide-react";
 import type { Appointment, Task } from "@/types";
+import type { EventInstance } from "@/app/actions/events";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { computeReminderAt, type ReminderMinutes } from "./AgendaSection";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+
+const REMINDER_OPTIONS: { value: ReminderMinutes; label: string }[] = [
+    { value: "", label: "Keine Erinnerung" },
+    { value: "15", label: "15 Min vorher" },
+    { value: "60", label: "1 Std vorher" },
+    { value: "1440", label: "1 Tag vorher" },
+    { value: "4320", label: "3 Tage vorher" },
+];
+
+function toDateTimeLocal(d: Date): string {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 const locales = { "de-DE": de };
 const localizer = dateFnsLocalizer({
@@ -24,7 +40,7 @@ export type CalendarEvent = {
     start: Date;
     end: Date;
     resource?: {
-        type: "appointment" | "task" | "time_entry";
+        type: "appointment" | "task" | "time_entry" | "event";
         completed?: boolean;
         caseId?: string | null;
         displayTitle: string;
@@ -32,6 +48,7 @@ export type CalendarEvent = {
         taskId?: string;
         employeeId?: string;
         employeeName?: string;
+        eventId?: string;
     };
 };
 
@@ -44,9 +61,19 @@ export type TimeEntryEvent = {
     notes?: string | null;
 };
 
+export type CreateAppointmentData = {
+    title: string;
+    start: string;
+    end?: string | null;
+    caseId?: string | null;
+    assigneeId?: string | null;
+    reminderAt?: string | null;
+};
+
 interface CalendarViewProps {
     appointments: Appointment[];
     tasks: Task[];
+    companyEvents?: EventInstance[];
     timeEntries?: TimeEntryEvent[];
     employees?: { id: string; display_name: string }[];
     showTimeEntries?: boolean;
@@ -54,8 +81,10 @@ interface CalendarViewProps {
     onOpenCase?: (caseId: string) => void;
     onEditAppointment?: (appointment: Appointment) => void;
     onEditTask?: (task: Task) => void;
+    onEditEvent?: (instance: EventInstance) => void;
     onDeleteAppointment?: (id: string) => void;
     onDeleteTask?: (id: string) => void;
+    onCreateAppointment?: (data: CreateAppointmentData) => Promise<void>;
     getCaseDisplayLabel?: (caseId: string | null | undefined) => string | null;
 }
 
@@ -142,6 +171,7 @@ function timeEntriesToEvents(
 export function CalendarView({
     appointments,
     tasks,
+    companyEvents = [],
     timeEntries = [],
     employees = [],
     showTimeEntries = true,
@@ -151,10 +181,22 @@ export function CalendarView({
     onEditTask,
     onDeleteAppointment,
     onDeleteTask,
+    onCreateAppointment,
     getCaseDisplayLabel,
 }: CalendarViewProps) {
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+    const [slotFormOpen, setSlotFormOpen] = useState(false);
+    const [slotFormSlot, setSlotFormSlot] = useState<SlotInfo | null>(null);
+    const [slotFormTitle, setSlotFormTitle] = useState("");
+    const [slotFormCaseId, setSlotFormCaseId] = useState<string | null>(null);
+    const [slotFormAssigneeId, setSlotFormAssigneeId] = useState<string | null>(null);
+    const [slotFormReminder, setSlotFormReminder] = useState<ReminderMinutes>("");
+    const [slotFormStart, setSlotFormStart] = useState("");
+    const [slotFormEnd, setSlotFormEnd] = useState("");
+    const [slotFormSubmitting, setSlotFormSubmitting] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [date, setDate] = useState(() => new Date());
+    const [view, setView] = useState<View>("week");
 
     useEffect(() => {
         const check = () => setIsMobile(typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT);
@@ -162,6 +204,50 @@ export function CalendarView({
         window.addEventListener("resize", check);
         return () => window.removeEventListener("resize", check);
     }, []);
+
+    useEffect(() => {
+        setView(isMobile ? "agenda" : "week");
+    }, [isMobile]);
+
+    const handleSelectSlot = useCallback((slotInfo: SlotInfo) => {
+        if (view === "month" && (slotInfo.action === "click" || slotInfo.action === "doubleClick")) {
+            setView("day");
+            setDate(slotInfo.start);
+        }
+        if (onCreateAppointment) {
+            const end = slotInfo.end ?? new Date(slotInfo.start.getTime() + 30 * 60 * 1000);
+            setSlotFormSlot(slotInfo);
+            setSlotFormTitle("");
+            setSlotFormCaseId(null);
+            setSlotFormAssigneeId(null);
+            setSlotFormReminder("");
+            setSlotFormStart(toDateTimeLocal(slotInfo.start));
+            setSlotFormEnd(toDateTimeLocal(end));
+            setSlotFormOpen(true);
+        }
+    }, [view, onCreateAppointment]);
+
+    const handleSlotFormSubmit = useCallback(async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!onCreateAppointment || !slotFormTitle || !slotFormStart) return;
+        const startStr = new Date(slotFormStart).toISOString();
+        const endStr = slotFormEnd ? new Date(slotFormEnd).toISOString() : null;
+        setSlotFormSubmitting(true);
+        try {
+            await onCreateAppointment({
+                title: slotFormTitle,
+                start: startStr,
+                end: endStr,
+                caseId: slotFormCaseId || null,
+                assigneeId: slotFormAssigneeId || null,
+                reminderAt: computeReminderAt(startStr, slotFormReminder),
+            });
+            setSlotFormOpen(false);
+            setSlotFormSlot(null);
+        } finally {
+            setSlotFormSubmitting(false);
+        }
+    }, [onCreateAppointment, slotFormTitle, slotFormStart, slotFormEnd, slotFormCaseId, slotFormAssigneeId, slotFormReminder]);
 
     const events: CalendarEvent[] = useMemo(() => {
         const result: CalendarEvent[] = [];
@@ -172,14 +258,27 @@ export function CalendarView({
 
         appointments.forEach((a) => {
             const start = new Date(a.date);
-            const end = new Date(start);
-            end.setMinutes(end.getMinutes() + 30);
+            const end = a.endAt ? new Date(a.endAt) : new Date(start.getTime() + 30 * 60 * 1000);
             result.push({
                 id: `appt-${a.id}`,
                 title: a.title,
                 start,
                 end,
                 resource: { type: "appointment", caseId: a.caseId ?? null, displayTitle: a.title, appointmentId: a.id },
+            });
+        });
+
+        companyEvents.forEach((ev) => {
+            result.push({
+                id: `event-${ev.eventId}-${ev.startAt}`,
+                title: ev.event.name,
+                start: new Date(ev.startAt),
+                end: new Date(ev.endAt),
+                resource: {
+                    type: "event",
+                    displayTitle: ev.event.name,
+                    eventId: ev.event.id,
+                },
             });
         });
 
@@ -216,23 +315,35 @@ export function CalendarView({
             });
 
         return result.sort((a, b) => a.start.getTime() - b.start.getTime());
-    }, [appointments, tasks, timeEntries, employees, showTimeEntries]);
+    }, [appointments, tasks, companyEvents, timeEntries, employees, showTimeEntries]);
 
     const eventStyleGetter = useCallback((event: CalendarEvent) => {
         const type = event.resource?.type;
         const isTask = type === "task";
         const isCompleted = event.resource?.completed;
         const isTimeEntry = type === "time_entry";
+        const isEvent = type === "event";
         return {
             style: {
                 backgroundColor: isTimeEntry
-                    ? "#6366f1"
-                    : isTask
-                        ? isCompleted
-                            ? "#22c55e"
-                            : "#f59e0b"
-                        : "var(--color-mw-green)",
-                borderRadius: "6px",
+                    ? "rgba(99, 102, 241, 0.14)"
+                    : isEvent
+                        ? "rgba(139, 92, 246, 0.14)"
+                        : isTask
+                            ? isCompleted
+                                ? "rgba(34, 197, 94, 0.14)"
+                                : "rgba(245, 158, 11, 0.14)"
+                            : "rgba(74, 85, 78, 0.14)",
+                color: isTimeEntry
+                    ? "#4338ca"
+                    : isEvent
+                        ? "#6d28d9"
+                        : isTask
+                            ? isCompleted
+                                ? "#15803d"
+                                : "#b45309"
+                            : "var(--color-mw-green-dark)",
+                borderRadius: "12px",
                 border: "none",
             },
         };
@@ -249,6 +360,9 @@ export function CalendarView({
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-gray-500 px-1">
                 <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded bg-mw-green" /> Termin
+                </span>
+                <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-violet-500" /> Veranstaltung
                 </span>
                 <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded bg-amber-500" /> Aufgabe (offen)
@@ -273,12 +387,105 @@ export function CalendarView({
                 culture="de-DE"
                 eventPropGetter={eventStyleGetter}
                 views={isMobile ? ["day", "agenda"] : ["month", "week", "day", "agenda"]}
-                defaultView={isMobile ? "agenda" : "week"}
+                date={date}
+                view={view}
+                onNavigate={(newDate) => setDate(newDate)}
+                onView={(newView) => setView(newView)}
+                selectable
+                onSelectSlot={handleSelectSlot}
                 popup
                 longPressThreshold={1}
                 onSelectEvent={(event) => setSelectedEvent(event as CalendarEvent)}
             />
             </div>
+
+            <Dialog open={slotFormOpen} onOpenChange={(open) => !open && setSlotFormOpen(false)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-base font-serif">Neuer Termin</DialogTitle>
+                    </DialogHeader>
+                    {slotFormSlot && (
+                        <form onSubmit={handleSlotFormSubmit} className="flex flex-col gap-3">
+                            <input
+                                type="text"
+                                placeholder="Titel..."
+                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-mw-green/30"
+                                value={slotFormTitle}
+                                onChange={(e) => setSlotFormTitle(e.target.value)}
+                                required
+                            />
+                            <select
+                                value={slotFormCaseId ?? ""}
+                                onChange={(e) => setSlotFormCaseId(e.target.value || null)}
+                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                            >
+                                <option value="">Fall (optional)</option>
+                                {cases.map((c) => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={slotFormAssigneeId ?? ""}
+                                onChange={(e) => setSlotFormAssigneeId(e.target.value || null)}
+                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                            >
+                                <option value="">An... (optional)</option>
+                                {employees.map((emp) => (
+                                    <option key={emp.id} value={emp.id}>{emp.display_name}</option>
+                                ))}
+                            </select>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="text-xs text-gray-500 block mb-1">Start</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                                        value={slotFormStart}
+                                        onChange={(e) => setSlotFormStart(e.target.value)}
+                                        required
+                                        aria-label="Startzeit"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-500 block mb-1">Ende</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                                        value={slotFormEnd}
+                                        onChange={(e) => setSlotFormEnd(e.target.value)}
+                                        aria-label="Endzeit"
+                                    />
+                                </div>
+                            </div>
+                            <select
+                                value={slotFormReminder}
+                                onChange={(e) => setSlotFormReminder(e.target.value as ReminderMinutes)}
+                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                            >
+                                {REMINDER_OPTIONS.map((o) => (
+                                    <option key={o.value || "none"} value={o.value}>{o.label}</option>
+                                ))}
+                            </select>
+                            <div className="flex gap-2 pt-1">
+                                <button
+                                    type="submit"
+                                    disabled={slotFormSubmitting}
+                                    className="flex-1 flex items-center justify-center gap-2 bg-mw-green text-white p-2.5 rounded-xl hover:bg-mw-green-dark transition text-sm font-medium disabled:opacity-60"
+                                >
+                                    <Plus size={16} /> Speichern
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSlotFormOpen(false)}
+                                    className="p-2.5 text-gray-500 hover:bg-gray-100 rounded-xl transition"
+                                >
+                                    Abbrechen
+                                </button>
+                            </div>
+                        </form>
+                    )}
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
                 <DialogContent className="sm:max-w-md">
@@ -286,9 +493,11 @@ export function CalendarView({
                         <DialogTitle className="text-base font-serif">
                             {selectedEvent?.resource?.type === "time_entry"
                                 ? "Arbeitszeit"
-                                : selectedEvent?.resource?.type === "task"
-                                    ? "Aufgabe"
-                                    : "Termin"}
+                                : selectedEvent?.resource?.type === "event"
+                                    ? "Veranstaltung"
+                                    : selectedEvent?.resource?.type === "task"
+                                        ? "Aufgabe"
+                                        : "Termin"}
                         </DialogTitle>
                     </DialogHeader>
                     {selectedEvent && (
@@ -307,6 +516,11 @@ export function CalendarView({
                             {selectedEvent.resource?.caseId && getDisplayLabel(selectedEvent.resource.caseId) && (
                                 <p className="text-xs text-gray-500">
                                     Fall: {getDisplayLabel(selectedEvent.resource.caseId)}
+                                </p>
+                            )}
+                            {selectedEvent.resource?.type === "event" && (
+                                <p className="text-xs text-gray-500">
+                                    Bearbeiten unter Unternehmen → Veranstaltungen
                                 </p>
                             )}
                             <div className="flex flex-col gap-2">

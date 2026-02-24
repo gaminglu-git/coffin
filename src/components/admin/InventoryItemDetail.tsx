@@ -71,7 +71,7 @@ export function InventoryItemDetail({ itemId }: InventoryItemDetailProps) {
     return (
       <div className="p-6">
         <p className="text-red-600">Artikel nicht gefunden.</p>
-        <Link href="/admin/inventory" className="text-mw-green mt-2 inline-block">
+        <Link href="/admin/leistungen/lager" className="text-mw-green mt-2 inline-block">
           Zurück zur Übersicht
         </Link>
       </div>
@@ -84,7 +84,7 @@ export function InventoryItemDetail({ itemId }: InventoryItemDetailProps) {
     <div className="flex flex-col h-full">
       <div className="bg-white border-b border-gray-200 p-4 sm:p-6 shrink-0">
         <Link
-          href="/admin/inventory"
+          href="/admin/leistungen/lager"
           className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4"
         >
           <ArrowLeft size={18} /> Zurück zur Übersicht
@@ -127,7 +127,7 @@ export function InventoryItemDetail({ itemId }: InventoryItemDetailProps) {
               )}
             </div>
           </div>
-          <Link href={`/admin/inventory/${itemId}/edit`}>
+          <Link href={`/admin/leistungen/lager/${itemId}/edit`}>
             <Button variant="outline">Bearbeiten</Button>
           </Link>
         </div>

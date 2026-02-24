@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 160" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Hand-drawn Zweig mit Blättern -->
+  <path d="M64 20 Q70 60 68 100 Q66 140 64 152" stroke="#059669" />
+  <path d="M68 60 Q52 58 48 72 Q60 68 68 60" stroke="#a7f3d0" />
+  <path d="M68 100 Q52 98 48 112 Q60 108 68 100" stroke="#a7f3d0" />
+</svg>

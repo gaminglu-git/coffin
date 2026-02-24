@@ -11,6 +11,14 @@ Im Portainer-Stack unter **Environment variables** (oder als `.env` im gleichen 
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Service Role Key |
 | `NEXT_PUBLIC_APP_URL` | App-URL (z.B. `https://coffin.gellen.duckdns.org`) |
 | `NEXT_PUBLIC_SITE_URL` | Site-URL (gleich wie APP_URL) |
+| `WHATSAPP_ACCESS_TOKEN` | (Optional) Meta WhatsApp Cloud API Token |
+| `WHATSAPP_PHONE_NUMBER_ID` | (Optional) Phone Number ID |
+| `WHATSAPP_RECIPIENT_PHONE_NUMBERS` | (Optional) Komma-getrennte Empfänger-Nummern |
+| `TELEGRAM_BOT_TOKEN` | (Optional) Telegram Bot Token von @BotFather |
+| `TELEGRAM_CHAT_IDS` | (Optional) Komma-getrennte Chat-IDs |
+| `RESEND_API_KEY` | (Optional) Resend API Key für E-Mail-Benachrichtigungen |
+| `EMAIL_NOTIFY_RECIPIENTS` | (Optional) Komma-getrennte E-Mail-Empfänger |
+| `EMAIL_NOTIFY_FROM` | (Optional) Absender-Adresse |
 
 **Wichtig:** Diese Variablen müssen sowohl als **Build Args** als auch als **Runtime Environment** gesetzt sein, damit der Build und die App funktionieren.
 

@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Decorative botanical branch/foliage -->
-  <path d="M20 180 Q40 160 60 140 Q80 120 100 100 Q120 80 140 90 Q160 100 180 80" stroke="#059669" opacity="0.7"/>
-  <path d="M100 100 Q90 80 70 70 Q50 60 30 80" stroke="#059669" opacity="0.6"/>
-  <path d="M100 100 Q110 85 130 75 Q150 65 170 85" stroke="#059669" opacity="0.6"/>
-  <ellipse cx="30" cy="85" rx="12" ry="8" fill="#a7f3d0" opacity="0.6"/>
-  <ellipse cx="100" cy="100" rx="15" ry="10" fill="#a7f3d0" opacity="0.5"/>
-  <ellipse cx="170" cy="85" rx="10" ry="7" fill="#a7f3d0" opacity="0.6"/>
-</svg>

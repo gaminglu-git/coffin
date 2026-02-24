@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Send } from "lucide-react";
 import { createBeratungCaseAction } from "@/app/actions/cases";
 import { beratungConfigSchema, type BeratungConfigFormData } from "@/lib/validations/beratung";
+import { FormSuccessModal } from "@/components/public/FormSuccessModal";
 
 const defaultValues: BeratungConfigFormData = {
   contact: { firstName: "", lastName: "", email: "", phone: "" },
@@ -18,6 +19,7 @@ const defaultValues: BeratungConfigFormData = {
 
 export function BeratungForm({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successData, setSuccessData] = useState<{ familyPin: string; summary?: string } | null>(null);
 
   const {
     register,
@@ -37,7 +39,10 @@ export function BeratungForm({ open, onOpenChange }: { open: boolean; onOpenChan
       if (result.success) {
         onOpenChange(false);
         reset(defaultValues);
-        alert(`Ihre Anfrage wurde sicher an uns übermittelt.\nIhre Familien-PIN für das Portal ist: ${result.familyPin}`);
+        setSuccessData({
+          familyPin: result.familyPin,
+          summary: "Beratungsanfrage",
+        });
       } else {
         alert(`Es gab einen Fehler beim Absenden:\n${result.error}`);
       }
@@ -51,23 +56,25 @@ export function BeratungForm({ open, onOpenChange }: { open: boolean; onOpenChan
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-1rem)] max-w-md p-0 overflow-hidden bg-stone-50 rounded-2xl border-0 gap-0">
-        <DialogHeader className="p-4 sm:p-6 border-b border-stone-200 bg-white">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:max-w-md md:max-w-lg max-h-[min(90dvh,90vh)] flex flex-col overflow-hidden bg-stone-50 rounded-2xl sm:rounded-4xl border-0 gap-0 p-0">
+        <DialogHeader className="p-4 sm:p-6 pt-[max(1rem,env(safe-area-inset-top))] border-b border-stone-200 bg-white shrink-0">
           <DialogTitle className="text-xl font-serif text-emerald-900">Beratung anfragen</DialogTitle>
           <p className="text-sm text-stone-500 mt-1">Wir melden uns zeitnah bei Ihnen.</p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(submitForm)} className="p-4 sm:p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit(submitForm)} autoComplete="on" className="flex flex-col min-h-0 flex-1 overflow-hidden">
+          <div className="flex flex-col min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4">
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="contact.firstName" className="text-xs font-medium text-stone-500 mb-1 block">
+              <Label htmlFor="beratung-firstname" className="text-xs font-medium text-stone-500 mb-1 block">
                 Vorname
               </Label>
               <Input
-                id="contact.firstName"
-                autoComplete="given-name"
-                className="w-full p-3 border border-stone-300 rounded-xl"
+                id="beratung-firstname"
+                autoComplete="section-beratung given-name"
+                className="w-full p-3 text-base border border-stone-300 rounded-xl min-h-[44px]"
                 {...register("contact.firstName")}
                 aria-invalid={!!errors.contact?.firstName}
               />
@@ -76,13 +83,13 @@ export function BeratungForm({ open, onOpenChange }: { open: boolean; onOpenChan
               )}
             </div>
             <div>
-              <Label htmlFor="contact.lastName" className="text-xs font-medium text-stone-500 mb-1 block">
+              <Label htmlFor="beratung-lastname" className="text-xs font-medium text-stone-500 mb-1 block">
                 Nachname
               </Label>
               <Input
-                id="contact.lastName"
-                autoComplete="family-name"
-                className="w-full p-3 border border-stone-300 rounded-xl"
+                id="beratung-lastname"
+                autoComplete="section-beratung family-name"
+                className="w-full p-3 text-base border border-stone-300 rounded-xl min-h-[44px]"
                 {...register("contact.lastName")}
                 aria-invalid={!!errors.contact?.lastName}
               />
@@ -93,14 +100,14 @@ export function BeratungForm({ open, onOpenChange }: { open: boolean; onOpenChan
           </div>
 
           <div>
-            <Label htmlFor="contact.email" className="text-xs font-medium text-stone-500 mb-1 block">
+            <Label htmlFor="beratung-email" className="text-xs font-medium text-stone-500 mb-1 block">
               E-Mail
             </Label>
             <Input
-              id="contact.email"
+              id="beratung-email"
               type="email"
-              autoComplete="email"
-              className="w-full p-3 border border-stone-300 rounded-xl"
+              autoComplete="section-beratung email"
+              className="w-full p-3 text-base border border-stone-300 rounded-xl min-h-[44px]"
               {...register("contact.email")}
               aria-invalid={!!errors.contact?.email}
             />
@@ -110,25 +117,26 @@ export function BeratungForm({ open, onOpenChange }: { open: boolean; onOpenChan
           </div>
 
           <div>
-            <Label htmlFor="contact.phone" className="text-xs font-medium text-stone-500 mb-1 block">
+            <Label htmlFor="beratung-phone" className="text-xs font-medium text-stone-500 mb-1 block">
               Telefon (optional)
             </Label>
             <Input
-              id="contact.phone"
+              id="beratung-phone"
               type="tel"
-              autoComplete="tel"
-              className="w-full p-3 border border-stone-300 rounded-xl"
+              autoComplete="section-beratung tel"
+              className="w-full p-3 text-base border border-stone-300 rounded-xl min-h-[44px]"
               {...register("contact.phone")}
             />
           </div>
 
           <div>
-            <Label htmlFor="message" className="text-xs font-medium text-stone-500 mb-1 block">
+            <Label htmlFor="beratung-message" className="text-xs font-medium text-stone-500 mb-1 block">
               Ihr Anliegen
             </Label>
             <textarea
-              id="message"
+              id="beratung-message"
               rows={4}
+              autoComplete="section-beratung off"
               className="w-full p-3 border border-stone-300 rounded-xl text-base resize-y min-h-[100px]"
               placeholder="Bitte beschreiben Sie kurz Ihr Anliegen..."
               {...register("message")}
@@ -136,16 +144,27 @@ export function BeratungForm({ open, onOpenChange }: { open: boolean; onOpenChan
             />
             {errors.message && <p className="text-xs text-red-600 mt-1">{errors.message.message}</p>}
           </div>
-
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-emerald-900 text-white py-3 rounded-full hover:bg-emerald-950 disabled:bg-stone-400"
-          >
-            <Send size={18} className="mr-2 inline" /> {isSubmitting ? "Wird gesendet..." : "Anfrage absenden"}
-          </Button>
+          </div>
+          <div className="shrink-0 p-4 sm:p-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200 bg-white rounded-b-2xl sm:rounded-b-4xl">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full min-h-[44px] bg-emerald-900 text-white py-3 rounded-full hover:bg-emerald-950 disabled:bg-stone-400 touch-manipulation"
+            >
+              <Send size={18} className="mr-2 inline" /> {isSubmitting ? "Wird gesendet..." : "Anfrage absenden"}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
+
+    <FormSuccessModal
+      open={!!successData}
+      onOpenChange={(o) => !o && setSuccessData(null)}
+      familyPin={successData?.familyPin ?? ""}
+      summary={successData?.summary}
+      caseType="beratung"
+    />
+    </>
   );
 }

@@ -43,13 +43,13 @@ export default async function QrScanPage({
   if (itemId) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      redirect(`/admin/inventory/${itemId}?ref=qr`);
+      redirect(`/admin/leistungen/lager/${itemId}?ref=qr`);
     }
   }
 
   const { data: { user } } = await supabase.auth.getUser();
   if (user && !itemId) {
-    redirect(`/admin/inventory?link=${qrId}`);
+    redirect(`/admin/leistungen/lager?link=${qrId}`);
   }
 
   return (

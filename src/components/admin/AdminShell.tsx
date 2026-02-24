@@ -6,8 +6,7 @@ import {
   Briefcase,
   CheckCircle,
   MessageSquare,
-  Users,
-  Package,
+  Building2,
   LogOut,
   Menu,
   X,
@@ -15,15 +14,16 @@ import {
   PanelLeftClose,
   PanelLeft,
   LayoutDashboard,
+  ListChecks,
 } from "lucide-react";
 import { NotificationBell } from "@/components/admin/NotificationBell";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { logoutAction } from "@/app/actions/auth";
 import { getCurrentEmployee } from "@/app/actions/employees";
 
 const STORAGE_KEY = "admin-sidebar-collapsed";
 
-type TabType = "dashboard" | "cases" | "tasks" | "correspondences" | "handover" | "employees";
+type TabType = "dashboard" | "cases" | "tasks" | "correspondences" | "handover";
 
 interface AdminShellProps {
   children: React.ReactNode;
@@ -47,9 +47,10 @@ export function AdminShell({ children, activeTab, setActiveTab }: AdminShellProp
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const isDashboard = pathname.startsWith("/admin/dashboard");
-  const isInventory = pathname.startsWith("/admin/inventory");
+  const isLeistungen = pathname.startsWith("/admin/leistungen");
+  const isUnternehmen = pathname.startsWith("/admin/unternehmen");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setSidebarCollapsed(getInitialCollapsed());
   }, []);
 
@@ -193,24 +194,31 @@ export function AdminShell({ children, activeTab, setActiveTab }: AdminShellProp
           "handover",
           "/admin/dashboard"
         )}
-        {navItem(
-          <Users size={18} className="shrink-0" />,
-          "HR / Personal",
-          "employees",
-          "/admin/dashboard"
-        )}
         <Link
-          href="/admin/inventory"
+          href="/admin/unternehmen"
           onClick={closeSidebar}
           className={`flex items-center gap-3 rounded-xl transition ${
             isCollapsed ? "justify-center p-2" : "px-4 py-3"
           } ${
-            isInventory ? "bg-mw-green-light shadow-md" : "hover:bg-mw-green-light/50"
+            isUnternehmen ? "bg-mw-green-light shadow-md" : "hover:bg-mw-green-light/50"
           }`}
-          title={isCollapsed ? "Lager" : undefined}
+          title={isCollapsed ? "Unternehmen" : undefined}
         >
-          <Package size={18} className="shrink-0" />
-          {!isCollapsed && "Lager"}
+          <Building2 size={18} className="shrink-0" />
+          {!isCollapsed && "Unternehmen"}
+        </Link>
+        <Link
+          href="/admin/leistungen"
+          onClick={closeSidebar}
+          className={`flex items-center gap-3 rounded-xl transition ${
+            isCollapsed ? "justify-center p-2" : "px-4 py-3"
+          } ${
+            isLeistungen ? "bg-mw-green-light shadow-md" : "hover:bg-mw-green-light/50"
+          }`}
+          title={isCollapsed ? "Leistungen" : undefined}
+        >
+          <ListChecks size={18} className="shrink-0" />
+          {!isCollapsed && "Leistungen"}
         </Link>
         <button
           onClick={handleLogout}

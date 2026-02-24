@@ -30,13 +30,22 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (err) {
+    // Invalid/expired refresh token (e.g. "Refresh Token Not Found") – clear stale session
+    const msg = (err as Error)?.message ?? '';
+    if (msg.includes('Refresh Token') || msg.includes('AuthApiError')) {
+      await supabase.auth.signOut({ scope: 'local' });
+    }
+  }
 
-  // Protect /admin/dashboard and /admin/inventory – redirect to login if not authenticated
+  // Protect /admin/dashboard, /admin/leistungen and /admin/inventory – redirect to login if not authenticated
   const isAdminProtected =
     request.nextUrl.pathname.startsWith('/admin/dashboard') ||
+    request.nextUrl.pathname.startsWith('/admin/leistungen') ||
     request.nextUrl.pathname.startsWith('/admin/inventory');
   if (isAdminProtected && !user) {
     const redirectUrl = request.nextUrl.clone();

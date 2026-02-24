@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Plus, Package, MapPin, Scan } from "lucide-react";
+import { getProductImageUrl } from "@/lib/storage-url";
 import { getInventoryItems, getCategories, getLocations } from "@/app/actions/inventory";
 import type { InventoryItem, InventoryCategory, InventoryLocation } from "@/types";
 import { Badge } from "@/components/ui/badge";
@@ -119,7 +120,7 @@ export function InventoryList() {
             </DialogContent>
           </Dialog>
           <Link
-            href="/admin/inventory/new"
+            href="/admin/leistungen/lager/new"
             className="bg-mw-green text-white px-6 py-2.5 rounded-xl hover:bg-mw-green-dark text-sm font-medium flex gap-2 transition shadow-sm"
           >
             <Plus size={18} /> Neuer Artikel
@@ -136,7 +137,7 @@ export function InventoryList() {
             <Package size={48} className="mx-auto mb-4 text-gray-300" />
             <p>Noch keine Artikel im Lager.</p>
             <Link
-              href="/admin/inventory/new"
+              href="/admin/leistungen/lager/new"
               className="inline-block mt-4 text-mw-green font-medium hover:underline"
             >
               Ersten Artikel anlegen
@@ -147,18 +148,31 @@ export function InventoryList() {
             {items.map((item) => (
               <Link
                 key={item.id}
-                href={`/admin/inventory/${item.id}`}
+                href={`/admin/leistungen/lager/${item.id}`}
                 className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-mw-green/30 transition flex items-center justify-between"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                    <Package size={20} className="text-gray-500" />
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                    {item.imageStoragePath ? (
+                      <img
+                        src={getProductImageUrl(item.imageStoragePath) ?? ""}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Package size={20} className="text-gray-500" />
+                    )}
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-800">{item.title}</h3>
                     <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
                       {item.sequentialId && (
                         <span className="font-mono">{item.sequentialId}</span>
+                      )}
+                      {item.priceCents != null && (
+                        <span className="font-medium text-mw-green">
+                          {(item.priceCents / 100).toLocaleString("de-DE")} €
+                        </span>
                       )}
                       {item.category && (
                         <span className="flex items-center gap-1">

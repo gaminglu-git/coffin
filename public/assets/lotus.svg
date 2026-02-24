@@ -1,0 +1,17 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Zentrum -->
+  <path d="M50 85 Q20 50 50 15 Q80 50 50 85" fill="#f28482"/>
+  <!-- Linkes Blütenblatt -->
+  <path d="M50 85 Q10 70 20 35 Q40 45 50 85" fill="#f5b5b4"/>
+  <!-- Rechtes Blütenblatt -->
+  <path d="M50 85 Q90 70 80 35 Q60 45 50 85" fill="#f5b5b4"/>
+  <!-- Äußeres Links -->
+  <path d="M45 85 Q-5 65 10 35 Q30 65 45 85" fill="#fbc3bc"/>
+  <!-- Äußeres Rechts -->
+  <path d="M55 85 Q105 65 90 35 Q70 65 55 85" fill="#fbc3bc"/>
+  <!-- Kleine Akzente / Stempel -->
+  <path d="M50 60 L45 30" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.6"/>
+  <path d="M50 60 L55 30" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.6"/>
+  <circle cx="45" cy="28" r="1.5" fill="#ffffff" opacity="0.8"/>
+  <circle cx="55" cy="28" r="1.5" fill="#ffffff" opacity="0.8"/>
+</svg>

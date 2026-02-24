@@ -23,6 +23,9 @@ export const inventoryItemSchema = z.object({
   locationId: z.string().uuid().optional().nullable(),
   caseId: z.string().uuid().optional().nullable(),
   deliveryStatus: z.enum(DELIVERY_STATUSES).optional().nullable(),
+  priceCents: z.number().int().min(0).optional().nullable(),
+  imageStoragePath: z.string().optional().nullable(),
+  parameters: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
 });
 
 export const qrCodeSchema = z.object({

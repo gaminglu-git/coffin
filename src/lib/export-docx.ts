@@ -1,6 +1,7 @@
 /**
  * Export letter/communication content as Word (docx).
  * Uses docx package for client-side Word generation.
+ * Dynamically imported to reduce initial bundle size.
  */
 
 import {

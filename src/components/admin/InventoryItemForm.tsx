@@ -1,10 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { inventoryItemSchema, type InventoryItemFormData } from "@/lib/validations/inventory";
-import { createInventoryItemAction, updateInventoryItemAction } from "@/app/actions/inventory";
+import {
+  createInventoryItemAction,
+  updateInventoryItemAction,
+  uploadProductImage,
+} from "@/app/actions/inventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getProductImageUrl } from "@/lib/storage-url";
+import { DynamicParametersField } from "./DynamicParametersField";
 import type { InventoryCategory, InventoryItem, InventoryLocation } from "@/types";
 
 interface InventoryItemFormProps {
@@ -34,8 +41,11 @@ export function InventoryItemForm({
   const router = useRouter();
   const isEdit = !!item;
 
+  const [imageUploading, setImageUploading] = useState(false);
+
   const {
     register,
+    control,
     handleSubmit,
     setValue,
     watch,
@@ -48,15 +58,39 @@ export function InventoryItemForm({
       status: item?.status ?? "in_stock",
       categoryId: item?.categoryId ?? null,
       locationId: item?.locationId ?? null,
+      priceCents: item?.priceCents ?? null,
+      imageStoragePath: item?.imageStoragePath ?? null,
+      parameters: item?.parameters ?? {},
     },
   });
 
   const categoryId = watch("categoryId");
   const locationId = watch("locationId");
+  const imageStoragePath = watch("imageStoragePath");
+  const parameters = watch("parameters");
 
   const NONE_VALUE = "__none__";
   const categorySelectValue = categoryId ?? NONE_VALUE;
   const locationSelectValue = locationId ?? NONE_VALUE;
+
+  const onImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageUploading(true);
+    try {
+      const fd = new FormData();
+      fd.set("file", file);
+      const result = await uploadProductImage(fd);
+      if (result.success && result.data) {
+        setValue("imageStoragePath", result.data.storagePath);
+      } else {
+        alert("error" in result ? result.error : "Upload fehlgeschlagen");
+      }
+    } finally {
+      setImageUploading(false);
+      e.target.value = "";
+    }
+  };
 
   const onSubmit = async (data: InventoryItemFormData) => {
     const formData = new FormData();
@@ -65,6 +99,9 @@ export function InventoryItemForm({
     formData.set("status", data.status);
     formData.set("categoryId", data.categoryId ?? "");
     formData.set("locationId", data.locationId ?? "");
+    if (data.priceCents != null) formData.set("priceCents", String(data.priceCents));
+    if (data.imageStoragePath) formData.set("imageStoragePath", data.imageStoragePath);
+    formData.set("parameters", JSON.stringify(data.parameters ?? {}));
 
     const result = isEdit
       ? await updateInventoryItemAction(item!.id, formData)
@@ -74,11 +111,11 @@ export function InventoryItemForm({
       onSuccess?.();
       const data = (result as { data?: InventoryItem }).data;
       if (isEdit && item) {
-        router.push(`/admin/inventory/${item.id}`);
+        router.push(`/admin/leistungen/lager/${item.id}`);
       } else if (data?.id) {
-        router.push(`/admin/inventory/${data.id}`);
+        router.push(`/admin/leistungen/lager/${data.id}`);
       } else {
-        router.push("/admin/inventory");
+        router.push("/admin/leistungen/lager");
       }
     } else {
       alert((result as { error: string }).error);
@@ -163,6 +200,64 @@ export function InventoryItemForm({
           </SelectContent>
         </Select>
       </div>
+      <div>
+        <Label htmlFor="priceEuro">Preis (€, optional)</Label>
+        <Controller
+          name="priceCents"
+          control={control}
+          render={({ field }) => (
+            <Input
+              id="priceEuro"
+              type="number"
+              min={0}
+              step={0.01}
+              value={field.value != null ? field.value / 100 : ""}
+              onChange={(e) => {
+                const v = e.target.value;
+                field.onChange(v === "" || isNaN(parseFloat(v)) ? null : Math.round(parseFloat(v) * 100));
+              }}
+              placeholder="z.B. 450"
+              className="mt-1"
+            />
+          )}
+        />
+      </div>
+      <div>
+        <Label>Produktbild (optional)</Label>
+        {imageStoragePath && (
+          <div className="mt-2 mb-2">
+            <img
+              src={getProductImageUrl(imageStoragePath) ?? ""}
+              alt="Vorschau"
+              className="h-24 w-24 object-cover rounded-lg border border-gray-200"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-1 text-red-600"
+              onClick={() => setValue("imageStoragePath", null)}
+            >
+              Bild entfernen
+            </Button>
+          </div>
+        )}
+        <Input
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={onImageSelect}
+          disabled={imageUploading}
+          className="mt-1"
+        />
+        {imageUploading && (
+          <p className="text-sm text-gray-500 mt-1">Wird hochgeladen...</p>
+        )}
+      </div>
+      <DynamicParametersField
+        key={item?.id ?? "new"}
+        value={parameters ?? {}}
+        onChange={(v) => setValue("parameters", v)}
+      />
       <div className="flex gap-3">
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Speichern..." : isEdit ? "Aktualisieren" : "Anlegen"}

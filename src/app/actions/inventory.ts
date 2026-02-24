@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   inventoryCategorySchema,
   inventoryLocationSchema,
@@ -153,6 +154,9 @@ function mapRowToInventoryItem(row: Record<string, unknown>): InventoryItem {
     caseId: row.case_id ?? null,
     assignedAt: row.assigned_at ?? null,
     deliveryStatus: (row.delivery_status as InventoryItem["deliveryStatus"]) ?? null,
+    priceCents: row.price_cents ?? null,
+    imageStoragePath: row.image_storage_path ?? null,
+    parameters: (row.parameters as Record<string, string | number | boolean>) ?? {},
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     category: row.inventory_categories ?? row.category ?? null,
@@ -164,12 +168,28 @@ function mapRowToInventoryItem(row: Record<string, unknown>): InventoryItem {
 export async function createInventoryItemAction(
   formData: FormData
 ): Promise<ActionResult<InventoryItem>> {
+  const priceVal = formData.get("priceCents");
+  const parametersRaw = formData.get("parameters");
+  const parameters =
+    parametersRaw && typeof parametersRaw === "string"
+      ? (() => {
+          try {
+            return JSON.parse(parametersRaw) as Record<string, string | number | boolean>;
+          } catch {
+            return {};
+          }
+        })()
+      : undefined;
+
   const parsed = inventoryItemSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description") || undefined,
     status: formData.get("status") || "in_stock",
     categoryId: formData.get("categoryId") || null,
     locationId: formData.get("locationId") || null,
+    priceCents: priceVal ? parseInt(String(priceVal), 10) : null,
+    imageStoragePath: formData.get("imageStoragePath") || null,
+    parameters,
   });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Validierungsfehler" };
@@ -189,6 +209,9 @@ export async function createInventoryItemAction(
       status: parsed.data.status,
       category_id: parsed.data.categoryId ?? null,
       location_id: parsed.data.locationId ?? null,
+      price_cents: parsed.data.priceCents ?? null,
+      image_storage_path: parsed.data.imageStoragePath ?? null,
+      parameters: parsed.data.parameters ?? {},
       sequential_id: sequentialId,
     })
     .select("*, inventory_categories(*), inventory_locations(*), qr_codes(*)")
@@ -201,6 +224,19 @@ export async function updateInventoryItemAction(
   itemId: string,
   formData: FormData
 ): Promise<ActionResult<InventoryItem>> {
+  const priceVal = formData.get("priceCents");
+  const parametersRaw = formData.get("parameters");
+  const parameters =
+    parametersRaw && typeof parametersRaw === "string"
+      ? (() => {
+          try {
+            return JSON.parse(parametersRaw) as Record<string, string | number | boolean>;
+          } catch {
+            return {};
+          }
+        })()
+      : undefined;
+
   const parsed = inventoryItemSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description") || undefined,
@@ -209,6 +245,9 @@ export async function updateInventoryItemAction(
     locationId: formData.get("locationId") || null,
     caseId: formData.get("caseId") || null,
     deliveryStatus: formData.get("deliveryStatus") || null,
+    priceCents: priceVal ? parseInt(String(priceVal), 10) : null,
+    imageStoragePath: formData.get("imageStoragePath") || null,
+    parameters,
   });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Validierungsfehler" };
@@ -222,6 +261,9 @@ export async function updateInventoryItemAction(
     location_id: parsed.data.locationId ?? null,
     case_id: parsed.data.caseId ?? null,
     delivery_status: parsed.data.deliveryStatus ?? null,
+    price_cents: parsed.data.priceCents ?? null,
+    image_storage_path: parsed.data.imageStoragePath ?? null,
+    parameters: parsed.data.parameters ?? {},
     updated_at: new Date().toISOString(),
   };
   if (parsed.data.caseId) {
@@ -273,6 +315,35 @@ export async function deleteInventoryItemAction(
   const { error } = await supabase.from("inventory_items").delete().eq("id", itemId);
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
+export async function uploadProductImage(
+  formData: FormData
+): Promise<ActionResult<{ storagePath: string }>> {
+  const file = formData.get("file") as File | null;
+  if (!file || !file.size) {
+    return { success: false, error: "Keine Datei ausgewählt" };
+  }
+  if (!IMAGE_TYPES.includes(file.type)) {
+    return { success: false, error: "Nur Bildformate (JPEG, PNG, WebP, GIF) erlaubt" };
+  }
+  if (file.size > MAX_IMAGE_SIZE) {
+    return { success: false, error: "Datei maximal 5 MB" };
+  }
+  const admin = createAdminClient();
+  const ext = file.name.split(".").pop() || "jpg";
+  const storagePath = `products/${crypto.randomUUID()}.${ext}`;
+  const { error } = await admin.storage
+    .from("product-images")
+    .upload(storagePath, file, { upsert: false });
+  if (error) {
+    console.error("uploadProductImage error:", error);
+    return { success: false, error: error.message };
+  }
+  return { success: true, data: { storagePath } };
 }
 
 // QR Codes
