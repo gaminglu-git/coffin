@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { MessageSquare, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getCurrentEmployee } from "@/app/actions/employees";
 import type { Employee } from "@/app/actions/employees";

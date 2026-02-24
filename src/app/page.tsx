@@ -1,12 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Phone, FileSearch, Heart, ShieldCheck, Users, Euro, CheckCircle, Mail, Info } from "lucide-react";
 import { Navbar } from "@/components/public/Navbar";
 import { VorsorgeConfigurator } from "@/components/public/VorsorgeConfigurator";
+import { TrauerfallForm } from "@/components/public/TrauerfallForm";
+import { BeratungForm } from "@/components/public/BeratungForm";
 
 export default function Home() {
   const [isConfiguratorOpen, setIsConfiguratorOpen] = useState(false);
+  const [isTrauerfallOpen, setIsTrauerfallOpen] = useState(false);
+  const [isBeratungOpen, setIsBeratungOpen] = useState(false);
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
@@ -20,16 +25,16 @@ export default function Home() {
         <section id="hero" className="relative min-h-[80vh] bg-stone-50 flex items-center justify-center py-24 sm:py-32 lg:pb-40 text-center px-4 overflow-hidden">
           {/* Dekorative Blumen-SVGs im Hintergrund */}
           <div className="absolute top-10 left-10 opacity-50 pointer-events-none">
-            <img src="/assets/hand-drawn-flower-1.svg" alt="" className="w-24 h-24 sm:w-32 sm:h-32 drop-shadow-sm" />
+            <Image src="/assets/hand-drawn-flower-1.svg" alt="" width={128} height={128} className="w-24 h-24 sm:w-32 sm:h-32 drop-shadow-sm" />
           </div>
           <div className="absolute bottom-20 right-10 opacity-50 pointer-events-none">
-            <img src="/assets/hand-drawn-leaf.svg" alt="" className="w-28 h-28 sm:w-40 sm:h-40 drop-shadow-sm" />
+            <Image src="/assets/hand-drawn-leaf.svg" alt="" width={160} height={160} className="w-28 h-28 sm:w-40 sm:h-40 drop-shadow-sm" />
           </div>
           <div className="absolute top-1/4 right-1/4 opacity-30 pointer-events-none hidden lg:block">
-            <img src="/assets/botanical-decoration.svg" alt="" className="w-24 h-24" />
+            <Image src="/assets/botanical-decoration.svg" alt="" width={96} height={96} className="w-24 h-24" />
           </div>
           <div className="absolute bottom-1/3 left-1/4 opacity-30 pointer-events-none hidden lg:block">
-            <img src="/assets/hand-drawn-flower-1.svg" alt="" className="w-20 h-20" />
+            <Image src="/assets/hand-drawn-flower-1.svg" alt="" width={80} height={80} className="w-20 h-20" />
           </div>
           <div className="relative z-10 max-w-3xl mx-auto space-y-8">
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif text-emerald-800 tracking-tight">
@@ -57,21 +62,21 @@ export default function Home() {
 
         <section id="philosophie" className="py-24 bg-white px-4">
           <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-12">
-            <div className="bg-stone-50 p-10 rounded-[2rem] border border-stone-100 hover:border-rose-200 transition shadow-sm">
+            <div className="bg-stone-50 p-10 rounded-4xl border border-stone-100 hover:border-rose-200 transition shadow-sm">
               <Heart className="text-emerald-600 w-12 h-12 mb-6" />
               <h4 className="text-2xl font-serif text-emerald-800 mb-4">Wir sind einfühlsam.</h4>
               <p className="text-stone-600 leading-relaxed">
                 Wir nehmen uns Zeit. Gemeinsam gestalten wir individuelle Abschiede. Den Sarg bemalen, die Urne selbst tragen – all das kann helfen, den Verlust zu begreifen.
               </p>
             </div>
-            <div className="bg-stone-50 p-10 rounded-[2rem] border border-stone-100 hover:border-rose-200 transition shadow-sm">
+            <div className="bg-stone-50 p-10 rounded-4xl border border-stone-100 hover:border-rose-200 transition shadow-sm">
               <ShieldCheck className="text-emerald-600 w-12 h-12 mb-6" />
               <h4 className="text-2xl font-serif text-emerald-800 mb-4">Wir sind offen.</h4>
               <p className="text-stone-600 leading-relaxed">
                 Offen für alle Menschen (LGBTQIA+ friendly) und Formen des Abschieds. Wir zeigen auf, was möglich ist und machen unsere Kosten absolut transparent.
               </p>
             </div>
-            <div className="bg-stone-50 p-10 rounded-[2rem] border border-stone-100 hover:border-rose-200 transition shadow-sm">
+            <div className="bg-stone-50 p-10 rounded-4xl border border-stone-100 hover:border-rose-200 transition shadow-sm">
               <Users className="text-emerald-600 w-12 h-12 mb-6" />
               <h4 className="text-2xl font-serif text-emerald-800 mb-4">Wir sind menschlich.</h4>
               <p className="text-stone-600 leading-relaxed">
@@ -83,7 +88,7 @@ export default function Home() {
 
         <section id="leistungen" className="relative py-24 bg-stone-100 px-4 overflow-hidden">
           <div className="absolute top-8 right-16 opacity-25 pointer-events-none hidden md:block">
-            <img src="/assets/hand-drawn-leaf.svg" alt="" className="w-16 h-16" />
+            <Image src="/assets/hand-drawn-leaf.svg" alt="" width={64} height={64} className="w-16 h-16" />
           </div>
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16 relative z-10">
             <div className="md:w-1/2">
@@ -109,7 +114,7 @@ export default function Home() {
                 </li>
               </ul>
             </div>
-            <div className="md:w-1/2 w-full bg-white p-8 sm:p-12 rounded-[2rem] shadow-xl border border-stone-100 text-center" id="vorsorge">
+            <div className="md:w-1/2 w-full bg-white p-8 sm:p-12 rounded-4xl shadow-xl border border-stone-100 text-center" id="vorsorge">
               <Euro className="text-emerald-600 w-16 h-16 mx-auto mb-6 opacity-80" />
               <h4 className="text-2xl font-serif text-emerald-800 mb-4">Transparente Kostenplanung</h4>
               <p className="text-stone-600 mb-8">
@@ -121,6 +126,17 @@ export default function Home() {
               >
                 Jetzt Wünsche konfigurieren
               </button>
+              <p className="mt-6 text-sm text-stone-500">
+                Trauerfall?{" "}
+                <button type="button" onClick={() => setIsTrauerfallOpen(true)} className="text-emerald-700 hover:underline font-medium">
+                  Sofort anfragen
+                </button>
+                {" · "}
+                Beratung gewünscht?{" "}
+                <button type="button" onClick={() => setIsBeratungOpen(true)} className="text-emerald-700 hover:underline font-medium">
+                  Anfragen
+                </button>
+              </p>
             </div>
           </div>
         </section>
@@ -128,10 +144,10 @@ export default function Home() {
         <footer id="kontakt" className="relative bg-stone-200/80 py-20 px-4 overflow-hidden">
           {/* Dezente florale Dekoration im Footer */}
           <div className="absolute top-4 right-8 opacity-40 pointer-events-none">
-            <img src="/assets/hand-drawn-flower-1.svg" alt="" className="w-20 h-20" />
+            <Image src="/assets/hand-drawn-flower-1.svg" alt="" width={80} height={80} className="w-20 h-20" />
           </div>
           <div className="absolute bottom-8 left-12 opacity-30 pointer-events-none">
-            <img src="/assets/hand-drawn-leaf.svg" alt="" className="w-24 h-24" />
+            <Image src="/assets/hand-drawn-leaf.svg" alt="" width={96} height={96} className="w-24 h-24" />
           </div>
           <div className="relative z-10 max-w-7xl mx-auto grid lg:grid-cols-2 gap-16">
             <div>
@@ -149,7 +165,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="bg-white/70 backdrop-blur-sm rounded-[2rem] p-10 text-center shadow-lg border border-stone-200/80 flex flex-col justify-center">
+            <div className="bg-white/70 backdrop-blur-sm rounded-4xl p-10 text-center shadow-lg border border-stone-200/80 flex flex-col justify-center">
               <Info size={48} className="mx-auto mb-6 text-emerald-500" />
               <h5 className="text-2xl font-serif mb-4 text-emerald-800">Im Trauerfall - Was tun?</h5>
               <p className="text-stone-600 mb-8 leading-relaxed">
@@ -164,6 +180,8 @@ export default function Home() {
       </div>
 
       <VorsorgeConfigurator open={isConfiguratorOpen} onOpenChange={setIsConfiguratorOpen} />
+      <TrauerfallForm open={isTrauerfallOpen} onOpenChange={setIsTrauerfallOpen} />
+      <BeratungForm open={isBeratungOpen} onOpenChange={setIsBeratungOpen} />
     </>
   );
 }

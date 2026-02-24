@@ -91,7 +91,7 @@ export function VorsorgeConfigurator({ open, onOpenChange }: { open: boolean; on
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-auto sm:max-w-2xl md:max-w-4xl p-0 overflow-hidden bg-stone-50 rounded-2xl sm:rounded-[2rem] border-0 gap-0 flex flex-col h-[95dvh] sm:h-auto sm:max-h-[min(90vh,100dvh)]">
+            <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-auto sm:max-w-2xl md:max-w-4xl p-0 overflow-hidden bg-stone-50 rounded-2xl sm:rounded-4xl border-0 gap-0 flex flex-col h-[95dvh] sm:h-auto sm:max-h-[min(90vh,100dvh)]">
                 <DialogHeader className="p-4 sm:p-6 border-b border-stone-200 bg-white shrink-0 pt-[max(1rem,env(safe-area-inset-top))]">
                     <DialogTitle className="text-2xl font-serif text-emerald-900">Vorsorge Konfigurator</DialogTitle>
                     <p className="text-sm text-stone-500 mt-1">Schritt {step} von 4</p>
@@ -232,7 +232,7 @@ export function VorsorgeConfigurator({ open, onOpenChange }: { open: boolean; on
                         </div>
                     </div>
 
-                    <div className="p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200 bg-white rounded-b-2xl sm:rounded-b-[2rem] flex justify-between items-center gap-4 shrink-0 flex-wrap sm:flex-nowrap">
+                    <div className="p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200 bg-white rounded-b-2xl sm:rounded-b-4xl flex justify-between items-center gap-4 shrink-0 flex-wrap sm:flex-nowrap">
                         {step > 1 ? (
                             <Button type="button" variant="ghost" onClick={() => setStep(step - 1)} className="flex items-center gap-2 text-stone-600 min-h-[44px] min-w-[44px] touch-manipulation -ml-2">
                                 <ChevronLeft size={16} /> Zurück

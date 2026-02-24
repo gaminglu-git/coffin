@@ -56,10 +56,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Case not found" }, { status: 404 });
     }
 
+    let employeeId: string | null = null;
+    const emailMatch = from.match(/<([^>]+)>/) || [null, from];
+    const fromEmail = (emailMatch[1] ?? from).trim().toLowerCase();
+    if (fromEmail) {
+      const { data: mailAccount } = await admin
+        .from("employee_mail_accounts")
+        .select("employee_id")
+        .eq("email", fromEmail)
+        .limit(1)
+        .single();
+      if (mailAccount?.employee_id) employeeId = mailAccount.employee_id;
+    }
+
     const { data: comm, error: insertError } = await admin
       .from("communications")
       .insert({
         case_id: caseId,
+        employee_id: employeeId,
         type: "email",
         direction: "incoming",
         subject: subject || null,

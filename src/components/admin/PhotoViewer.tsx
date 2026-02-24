@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
   X,
   ChevronLeft,
@@ -45,8 +46,8 @@ export function PhotoViewer({
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft") hasPrev && onPrev();
-      if (e.key === "ArrowRight") hasNext && onNext();
+      if (e.key === "ArrowLeft" && hasPrev) onPrev();
+      if (e.key === "ArrowRight" && hasNext) onNext();
     },
     [onClose, onPrev, onNext, hasPrev, hasNext]
   );
@@ -74,7 +75,7 @@ export function PhotoViewer({
   if (!photo) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col">
+    <div className="fixed inset-0 z-100 bg-black/95 flex flex-col">
       {/* Top bar */}
       <div className="flex items-center justify-between p-3 sm:p-4 bg-black/50 shrink-0">
         <span className="text-white text-sm font-medium">
@@ -136,12 +137,20 @@ export function PhotoViewer({
             <ChevronRight size={28} />
           </button>
         )}
-        <img
-          src={photo.url}
-          alt={photo.caption || `Foto von ${photo.uploadedByName}`}
-          className="max-w-full max-h-full object-contain"
-          draggable={false}
-        />
+        {photo.url ? (
+          <div className="absolute inset-4 flex items-center justify-center">
+            <div className="relative w-full h-full">
+              <Image
+                src={photo.url}
+                alt={photo.caption || `Foto von ${photo.uploadedByName}`}
+                fill
+                className="object-contain"
+                sizes="100vw"
+                draggable={false}
+              />
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* Caption bar */}

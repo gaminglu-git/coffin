@@ -30,7 +30,10 @@ export function useRealtimeTable(
   const { table, event = "*", schema = "public", filter } = options;
   const id = channelId ?? `realtime-${table}-${filter ?? "all"}`;
   const onPayloadRef = useRef(onPayload);
-  onPayloadRef.current = onPayload;
+
+  useEffect(() => {
+    onPayloadRef.current = onPayload;
+  }, [onPayload]);
 
   useEffect(() => {
     const config: {

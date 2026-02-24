@@ -2,10 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FileSearch, Key, Lock, Menu, X, User } from "lucide-react";
+import { FileSearch, Key, Lock, Menu, X, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function Navbar() {
+interface NavbarProps {
+    variant?: "home" | "family";
+    onLogout?: () => void;
+}
+
+export function Navbar({ variant = "home", onLogout }: NavbarProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const scrollTo = (id: string) => {
@@ -20,8 +25,14 @@ export function Navbar() {
         <nav className="fixed w-full bg-stone-50/95 backdrop-blur-md shadow-sm z-40 border-b border-stone-200 transition-all">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-20 items-center">
+                    {variant === "family" ? (
+                        <Link href="/" className="shrink-0">
+                            <h1 className="font-serif text-2xl text-emerald-800">liebevoll bestatten</h1>
+                            <p className="text-xs tracking-widest text-stone-500 uppercase">Angehörigen portal</p>
+                        </Link>
+                    ) : (
                     <div
-                        className="flex-shrink-0 cursor-pointer"
+                        className="shrink-0 cursor-pointer"
                         onClick={() => scrollTo("hero")}
                     >
                         <h1 className="font-serif text-2xl text-emerald-800">
@@ -31,7 +42,17 @@ export function Navbar() {
                             minten & walter · Bonn
                         </p>
                     </div>
+                    )}
 
+                    {variant === "family" ? (
+                    <div className="flex items-center">
+                        {onLogout && (
+                            <Button variant="outline" onClick={onLogout} className="text-stone-500 hover:text-red-500 text-sm font-medium flex items-center gap-2 bg-stone-100 transition border-stone-200">
+                                <LogOut size={16} /> Abmelden
+                            </Button>
+                        )}
+                    </div>
+                    ) : (
                     <div className="hidden md:flex space-x-8 items-center">
                         <button
                             onClick={() => scrollTo("philosophie")}
@@ -76,7 +97,9 @@ export function Navbar() {
                             </Link>
                         </div>
                     </div>
+                    )}
 
+                    {variant !== "family" && (
                     <div className="md:hidden flex items-center">
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -85,6 +108,7 @@ export function Navbar() {
                             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
                     </div>
+                    )}
                 </div>
             </div>
 
@@ -117,14 +141,14 @@ export function Navbar() {
                     <div className="border-t pt-4 space-y-4">
                         <Link
                             href="/family"
-                            className="block w-full text-left text-stone-600 font-medium flex items-center gap-2"
+                            className="w-full text-left text-stone-600 font-medium flex items-center gap-2"
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             <Key size={16} /> Familien-Login
                         </Link>
                         <Link
                             href="/admin"
-                            className="block w-full text-left text-stone-400 font-medium flex items-center gap-2"
+                            className="w-full text-left text-stone-400 font-medium flex items-center gap-2"
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             <Lock size={16} /> Mitarbeiter Login

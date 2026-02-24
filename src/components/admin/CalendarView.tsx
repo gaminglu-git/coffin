@@ -24,18 +24,32 @@ export type CalendarEvent = {
     start: Date;
     end: Date;
     resource?: {
-        type: "appointment" | "task";
+        type: "appointment" | "task" | "time_entry";
         completed?: boolean;
         caseId?: string | null;
         displayTitle: string;
         appointmentId?: string;
         taskId?: string;
+        employeeId?: string;
+        employeeName?: string;
     };
+};
+
+export type TimeEntryEvent = {
+    id: string;
+    employeeId: string;
+    eventType: "clock_in" | "clock_out";
+    recordedAt: string;
+    source: string;
+    notes?: string | null;
 };
 
 interface CalendarViewProps {
     appointments: Appointment[];
     tasks: Task[];
+    timeEntries?: TimeEntryEvent[];
+    employees?: { id: string; display_name: string }[];
+    showTimeEntries?: boolean;
     cases?: { id: string; name: string; contact?: { firstName?: string; lastName?: string } }[];
     onOpenCase?: (caseId: string) => void;
     onEditAppointment?: (appointment: Appointment) => void;
@@ -66,9 +80,71 @@ const messages = {
 
 const MOBILE_BREAKPOINT = 640;
 
+function timeEntriesToEvents(
+    entries: TimeEntryEvent[],
+    employees: { id: string; display_name: string }[]
+): CalendarEvent[] {
+    const result: CalendarEvent[] = [];
+    const byEmployee = new Map<string, TimeEntryEvent[]>();
+    for (const e of entries) {
+        if (!byEmployee.has(e.employeeId)) byEmployee.set(e.employeeId, []);
+        byEmployee.get(e.employeeId)!.push(e);
+    }
+    for (const [empId, evts] of byEmployee) {
+        const emp = employees.find((x) => x.id === empId);
+        const name = emp?.display_name ?? "Unbekannt";
+        evts.sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+        const stack: TimeEntryEvent[] = [];
+        for (const evt of evts) {
+            if (evt.eventType === "clock_in") {
+                stack.push(evt);
+            } else {
+                const inEvt = stack.pop();
+                if (inEvt) {
+                    const start = new Date(inEvt.recordedAt);
+                    const end = new Date(evt.recordedAt);
+                    result.push({
+                        id: `time-${inEvt.id}`,
+                        title: `🕐 ${name}`,
+                        start,
+                        end,
+                        resource: {
+                            type: "time_entry",
+                            displayTitle: `Arbeitszeit ${name}`,
+                            employeeId: empId,
+                            employeeName: name,
+                        },
+                    });
+                }
+            }
+        }
+        for (const inEvt of stack) {
+            const start = new Date(inEvt.recordedAt);
+            const end = new Date(start);
+            end.setHours(23, 59, 59, 999);
+            result.push({
+                id: `time-${inEvt.id}`,
+                title: `🕐 ${name} (läuft)`,
+                start,
+                end,
+                resource: {
+                    type: "time_entry",
+                    displayTitle: `Arbeitszeit ${name} (noch eingestempelt)`,
+                    employeeId: empId,
+                    employeeName: name,
+                },
+            });
+        }
+    }
+    return result;
+}
+
 export function CalendarView({
     appointments,
     tasks,
+    timeEntries = [],
+    employees = [],
+    showTimeEntries = true,
     cases = [],
     onOpenCase,
     onEditAppointment,
@@ -89,6 +165,10 @@ export function CalendarView({
 
     const events: CalendarEvent[] = useMemo(() => {
         const result: CalendarEvent[] = [];
+
+        if (showTimeEntries && timeEntries.length > 0) {
+            result.push(...timeEntriesToEvents(timeEntries, employees));
+        }
 
         appointments.forEach((a) => {
             const start = new Date(a.date);
@@ -136,18 +216,22 @@ export function CalendarView({
             });
 
         return result.sort((a, b) => a.start.getTime() - b.start.getTime());
-    }, [appointments, tasks]);
+    }, [appointments, tasks, timeEntries, employees, showTimeEntries]);
 
     const eventStyleGetter = useCallback((event: CalendarEvent) => {
-        const isTask = event.resource?.type === "task";
+        const type = event.resource?.type;
+        const isTask = type === "task";
         const isCompleted = event.resource?.completed;
+        const isTimeEntry = type === "time_entry";
         return {
             style: {
-                backgroundColor: isTask
-                    ? isCompleted
-                        ? "#22c55e"
-                        : "#f59e0b"
-                    : "var(--color-mw-green)",
+                backgroundColor: isTimeEntry
+                    ? "#6366f1"
+                    : isTask
+                        ? isCompleted
+                            ? "#22c55e"
+                            : "#f59e0b"
+                        : "var(--color-mw-green)",
                 borderRadius: "6px",
                 border: "none",
             },
@@ -172,6 +256,11 @@ export function CalendarView({
                 <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded bg-green-500" /> Aufgabe (erledigt)
                 </span>
+                {showTimeEntries && (
+                    <span className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded bg-indigo-500" /> Arbeitszeiten
+                    </span>
+                )}
             </div>
             <div className="h-[calc(80vh-2rem)] min-h-[320px] sm:min-h-[400px] bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 p-2 sm:p-4 rbc-calendar-mobile">
             <Calendar
@@ -195,7 +284,11 @@ export function CalendarView({
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-base font-serif">
-                            {selectedEvent?.resource?.type === "task" ? "Aufgabe" : "Termin"}
+                            {selectedEvent?.resource?.type === "time_entry"
+                                ? "Arbeitszeit"
+                                : selectedEvent?.resource?.type === "task"
+                                    ? "Aufgabe"
+                                    : "Termin"}
                         </DialogTitle>
                     </DialogHeader>
                     {selectedEvent && (
@@ -206,6 +299,11 @@ export function CalendarView({
                                 <br />
                                 {format(selectedEvent.start, "HH:mm")} – {format(selectedEvent.end, "HH:mm")} Uhr
                             </p>
+                            {selectedEvent.resource?.type === "time_entry" && selectedEvent.resource?.employeeName && (
+                                <p className="text-xs text-gray-500">
+                                    Mitarbeiter: {selectedEvent.resource.employeeName}
+                                </p>
+                            )}
                             {selectedEvent.resource?.caseId && getDisplayLabel(selectedEvent.resource.caseId) && (
                                 <p className="text-xs text-gray-500">
                                     Fall: {getDisplayLabel(selectedEvent.resource.caseId)}

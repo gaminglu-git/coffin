@@ -24,7 +24,7 @@ import Link from "next/link";
 type Notification = {
   id: string;
   employeeId: string;
-  type: "handover" | "task_assigned" | "communication";
+  type: "handover" | "task_assigned" | "communication" | "messenger";
   title: string;
   body: string | null;
   link: string | null;
@@ -36,6 +36,7 @@ const TYPE_LABELS: Record<string, string> = {
   handover: "Übergabebuch",
   task_assigned: "Aufgabe",
   communication: "Kommunikation",
+  messenger: "Messenger",
 };
 
 export function NotificationBell({
@@ -233,9 +234,9 @@ const PREFERENCE_ITEMS: {
   icon: React.ReactNode;
 }[] = [
   {
-    key: "handover",
-    label: "Übergabebuch",
-    description: "Neue Notizen von Kollegen im Team-Übergabebuch",
+    key: "messenger",
+    label: "Messenger",
+    description: "Neue Nachrichten im internen Messenger",
     icon: <MessageSquare size={18} className="text-mw-green" />,
   },
   {
@@ -263,14 +264,14 @@ function NotificationPreferencesModal({
   onSave: (p: NotificationPreferences) => Promise<void>;
   onClose: () => void;
 }) {
-  const [handover, setHandover] = useState(true);
+  const [messenger, setMessenger] = useState(true);
   const [taskAssigned, setTaskAssigned] = useState(true);
   const [communication, setCommunication] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (prefs) {
-      setHandover(prefs.handover);
+      setMessenger(prefs.messenger);
       setTaskAssigned(prefs.taskAssigned);
       setCommunication(prefs.communication);
     }
@@ -278,7 +279,12 @@ function NotificationPreferencesModal({
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave({ handover, taskAssigned, communication });
+    await onSave({
+      messenger,
+      taskAssigned,
+      communication,
+      handover: prefs?.handover ?? true,
+    });
     setSaving(false);
   };
 
@@ -304,10 +310,10 @@ function NotificationPreferencesModal({
           <div className="flex flex-col divide-y divide-gray-100">
             {PREFERENCE_ITEMS.map(({ key, label, description, icon }) => {
               const checked =
-                key === "handover" ? handover : key === "taskAssigned" ? taskAssigned : communication;
+                key === "messenger" ? messenger : key === "taskAssigned" ? taskAssigned : communication;
               const setChecked =
-                key === "handover"
-                  ? setHandover
+                key === "messenger"
+                  ? setMessenger
                   : key === "taskAssigned"
                     ? setTaskAssigned
                     : setCommunication;

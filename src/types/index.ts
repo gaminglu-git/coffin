@@ -1,5 +1,7 @@
 export type CaseStatus = 'Neu' | 'In Planung' | 'Behörden & Orga' | 'Trauerfeier' | 'Abgeschlossen';
 
+export type CaseType = 'vorsorge' | 'trauerfall' | 'beratung' | 'sonstiges';
+
 export interface Case {
     id: string; // From Supabase
     name: string;
@@ -64,6 +66,7 @@ export interface Case {
     }[];
     position?: number;
     postCareGenerated?: boolean;
+    caseType?: CaseType;
 }
 
 export interface Task {
@@ -135,6 +138,15 @@ export interface EmailTemplate {
     name: string;
     subject: string;
     body: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface ChecklistTemplate {
+    id: string;
+    name: string;
+    burialType: string | null;
+    items: { title: string; items: { text: string }[] }[];
     createdAt: string;
     updatedAt: string;
 }

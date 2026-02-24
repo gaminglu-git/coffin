@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export type Notification = {
   id: string;
   employeeId: string;
-  type: "handover" | "task_assigned" | "communication";
+  type: "handover" | "task_assigned" | "communication" | "messenger";
   title: string;
   body: string | null;
   link: string | null;
@@ -84,6 +84,7 @@ export type NotificationPreferences = {
   handover: boolean;
   taskAssigned: boolean;
   communication: boolean;
+  messenger: boolean;
 };
 
 export async function getNotificationPreferences(): Promise<NotificationPreferences | null> {
@@ -97,17 +98,18 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
 
   const { data } = await supabase
     .from("notification_preferences")
-    .select("handover, task_assigned, communication")
+    .select("handover, task_assigned, communication, messenger")
     .eq("employee_id", emp.id)
     .single();
 
   if (!data) {
-    return { handover: true, taskAssigned: true, communication: true };
+    return { handover: true, taskAssigned: true, communication: true, messenger: true };
   }
   return {
     handover: data.handover ?? true,
     taskAssigned: data.task_assigned ?? true,
     communication: data.communication ?? true,
+    messenger: data.messenger ?? true,
   };
 }
 
@@ -130,6 +132,7 @@ export async function updateNotificationPreferences(
         handover: prefs.handover,
         task_assigned: prefs.taskAssigned,
         communication: prefs.communication,
+        messenger: prefs.messenger,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "employee_id" }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, Package, MapPin, QrCode as QrCodeIcon, Briefcase } from "lucide-react";
 import { getInventoryItemById, createQrCodeAction } from "@/app/actions/inventory";
@@ -37,16 +37,16 @@ export function InventoryItemDetail({ itemId }: InventoryItemDetailProps) {
   const [loading, setLoading] = useState(true);
   const [creatingQr, setCreatingQr] = useState(false);
 
-  const loadItem = async () => {
+  const loadItem = useCallback(async () => {
     setLoading(true);
     const data = await getInventoryItemById(itemId);
     setItem(data);
     setLoading(false);
-  };
+  }, [itemId]);
 
   useEffect(() => {
     loadItem();
-  }, [itemId]);
+  }, [loadItem]);
 
   const handleCreateQr = async () => {
     setCreatingQr(true);

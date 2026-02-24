@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Key, ChevronRight, X } from "lucide-react";
 import Link from "next/link";
@@ -29,8 +30,8 @@ export default function FamilyLogin() {
             }
 
             router.push(`/family/${data.family_pin}`);
-        } catch (err: any) {
-            setError(err.message || "Fehler beim Login.");
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Fehler beim Login.");
         } finally {
             setIsLoading(false);
         }
@@ -39,7 +40,7 @@ export default function FamilyLogin() {
     return (
         <div className="min-h-screen bg-stone-100 flex items-center justify-center px-4 relative z-50">
             <div className="absolute top-10 left-10 opacity-50 pointer-events-none hidden sm:block">
-                <img src="/assets/hand-drawn-flower-1.svg" alt="" className="w-20 h-20" />
+                <Image src="/assets/hand-drawn-flower-1.svg" alt="" width={80} height={80} className="w-20 h-20" />
             </div>
             <div className="absolute top-6 left-6">
                 <Link href="/" className="font-serif text-xl text-emerald-900">
@@ -47,8 +48,8 @@ export default function FamilyLogin() {
                 </Link>
             </div>
 
-            <div className="max-w-md w-full bg-white rounded-[2rem] shadow-xl p-8 sm:p-12 relative overflow-hidden border border-stone-100">
-                <div className="absolute top-0 left-0 w-full h-2 bg-emerald-600 rounded-t-[2rem]"></div>
+            <div className="max-w-md w-full bg-white rounded-4xl shadow-xl p-8 sm:p-12 relative overflow-hidden border border-stone-100">
+                <div className="absolute top-0 left-0 w-full h-2 bg-emerald-600 rounded-t-4xl"></div>
 
                 <Link href="/" className="absolute top-6 right-6 text-stone-400 hover:text-stone-600">
                     <X size={24} />

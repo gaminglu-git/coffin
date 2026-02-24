@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { LogOut, Clock, CheckCircle, Heart, FileText, Send, UploadCloud, ImageIcon } from "lucide-react";
+import { Clock, CheckCircle, Heart, FileText, Send, UploadCloud, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { stripCaseTypePrefix } from "@/lib/utils";
 import { CircularPhotoGallery } from "@/components/family/CircularPhotoGallery";
+import { Navbar } from "@/components/public/Navbar";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -26,7 +28,13 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
     const [newMemory, setNewMemory] = useState("");
     const [uploadedByName, setUploadedByName] = useState("");
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
-    const [caseData, setCaseData] = useState<any>(null);
+    const [caseData, setCaseData] = useState<{
+        id: string;
+        name: string;
+        status: string;
+        family_photos?: { id: string; url: string; caption?: string | null; uploaded_by_name?: string }[];
+        memories?: { id: string; text: string; created_at: string }[];
+    } | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -44,10 +52,10 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
                 return;
             }
             if (data.memories) {
-                data.memories.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                data.memories.sort((a: { created_at: string }, b: { created_at: string }) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             }
             if (data.family_photos) {
-                data.family_photos = data.family_photos.map((p: any) => ({
+                data.family_photos = data.family_photos.map((p: { id: string; storage_path: string; uploaded_by_name?: string; caption?: string | null; created_at: string }) => ({
                     ...p,
                     url: supabase.storage.from("family-files").getPublicUrl(p.storage_path).data.publicUrl,
                 }));
@@ -71,10 +79,11 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
                 },
                 (payload) => {
                     console.log('Realtime update received:', payload);
-                    setCaseData((current: any) => ({
-                        ...current,
-                        ...payload.new
-                    }));
+                    setCaseData((current) => {
+                        if (!current) return current;
+                        const updated = { ...current, ...(payload.new as Record<string, unknown>) };
+                        return updated as typeof current;
+                    });
                 }
             )
             .subscribe();
@@ -100,7 +109,7 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
         if (!error && data) {
             setCaseData({
                 ...caseData,
-                memories: [data, ...caseData.memories]
+                memories: [data, ...(caseData.memories ?? [])]
             });
             setNewMemory("");
         }
@@ -164,28 +173,34 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
         e.target.value = "";
     };
 
-    if (loading) return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><div className="animate-pulse text-emerald-900">Lade Fall-Daten...</div></div>;
+    if (loading) return (
+        <div className="min-h-screen bg-stone-50 flex items-center justify-center pt-20">
+            <div className="animate-pulse text-emerald-800">Lade Fall-Daten...</div>
+        </div>
+    );
+
+    if (!caseData) return null;
 
     const statusIndex = KANBAN_COLUMNS.findIndex((c) => c.id === caseData.status);
     const progressPercent = Math.max(10, (statusIndex / (KANBAN_COLUMNS.length - 1)) * 100);
 
     return (
-        <div className="min-h-screen bg-stone-50 font-sans text-stone-800">
-            <nav className="bg-white border-b border-stone-200 px-4 sm:px-8 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
-                <div>
-                    <h1 className="font-serif text-xl text-emerald-900">liebevoll bestatten</h1>
-                    <p className="text-[10px] tracking-widest text-stone-500 uppercase">Angehörigen portal</p>
+        <>
+            <Navbar variant="family" onLogout={handleLogout} />
+            <div className="pt-20 min-h-screen bg-stone-50 font-sans text-stone-800 relative overflow-hidden">
+                {/* Florale Dekoration wie auf der Landing Page */}
+                <div className="absolute top-24 right-8 opacity-30 pointer-events-none hidden lg:block">
+                    <Image src="/assets/hand-drawn-flower-1.svg" alt="" width={80} height={80} className="w-20 h-20" />
                 </div>
-                <Button variant="outline" onClick={handleLogout} className="text-stone-500 hover:text-red-500 text-sm font-medium flex items-center gap-2 bg-stone-100 transition border-none shadow-none">
-                    <LogOut size={16} /> Abmelden
-                </Button>
-            </nav>
+                <div className="absolute bottom-1/4 left-8 opacity-25 pointer-events-none hidden md:block">
+                    <Image src="/assets/hand-drawn-leaf.svg" alt="" width={96} height={96} className="w-24 h-24" />
+                </div>
 
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+            <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
                 <header className="mb-12 text-center">
-                    <h2 className="text-3xl sm:text-4xl font-serif text-emerald-900 mb-4">Übersicht & Planung</h2>
+                    <h2 className="text-3xl sm:text-4xl font-serif text-emerald-800 mb-4">Übersicht & Planung</h2>
                     <p className="text-stone-600 max-w-2xl mx-auto">
-                        Für <strong>{caseData.name.replace("VORSORGE: ", "")}</strong>.
+                        Für <strong>{stripCaseTypePrefix(caseData.name)}</strong>.
                     </p>
                 </header>
 
@@ -193,16 +208,16 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
                 {caseData.family_photos && caseData.family_photos.length > 0 && (
                     <div className="mb-12">
                         <CircularPhotoGallery
-                            photos={caseData.family_photos.map((p: any) => ({
+                            photos={caseData.family_photos.map((p) => ({
                                 id: p.id,
                                 url: p.url,
                                 caption: p.caption,
-                                uploadedBy: p.uploaded_by_name,
+                                uploadedBy: p.uploaded_by_name ?? "Unbekannt",
                             }))}
                             groupByPerson={false}
                             height={500}
                             bend={2}
-                            textColor="#064e3b"
+                            textColor="#047857"
                             borderRadius={0.05}
                             scrollSpeed={2}
                             scrollEase={0.05}
@@ -213,8 +228,8 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
                 <div className="grid md:grid-cols-3 gap-8">
                     {/* Timeline Status Tracker */}
                     <div className="md:col-span-1 space-y-6">
-                        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-stone-100">
-                            <h3 className="font-medium text-emerald-900 mb-6 flex items-center gap-2">
+                        <div className="bg-white p-6 rounded-4xl shadow-sm border border-stone-100">
+                            <h3 className="font-medium text-emerald-800 mb-6 flex items-center gap-2">
                                 <Clock size={20} /> Aktueller Status
                             </h3>
                             <div className="relative">
@@ -243,7 +258,7 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
                                                     {isPast ? <CheckCircle size={14} /> : index + 1}
                                                 </div>
                                                 <div>
-                                                    <span className={`block text-sm ${isCurrent ? "font-bold text-emerald-900" : "font-medium text-stone-500"}`}>
+                                                    <span className={`block text-sm ${isCurrent ? "font-bold text-emerald-800" : "font-medium text-stone-500"}`}>
                                                         {col.title}
                                                     </span>
                                                 </div>
@@ -257,22 +272,22 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
 
                     <div className="md:col-span-2 space-y-6">
                         {/* Memory Wiki */}
-                        <div className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-sm border border-stone-100 flex flex-col">
+                        <div className="bg-white p-6 sm:p-8 rounded-4xl shadow-sm border border-stone-100 flex flex-col">
                             <div className="flex items-start justify-between mb-6">
                                 <div>
-                                    <h3 className="text-xl font-serif text-emerald-900 flex items-center gap-2 mb-2">
+                                    <h3 className="text-xl font-serif text-emerald-800 flex items-center gap-2 mb-2">
                                         <Heart size={24} className="text-emerald-600" /> Erinnerungen & Anekdoten
                                     </h3>
                                 </div>
                             </div>
                             <div className="flex-1 overflow-y-auto space-y-4 mb-6 pr-2">
-                                {caseData.memories.length === 0 ? (
+                                {(caseData.memories ?? []).length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-stone-400 p-8 border-2 border-dashed border-stone-200 rounded-2xl">
                                         <FileText size={48} className="mb-4 opacity-50" />
                                         <p className="text-center text-sm">Noch keine Einträge vorhanden.</p>
                                     </div>
                                 ) : (
-                                    caseData.memories.map((mem: any) => (
+                                    (caseData.memories ?? []).map((mem) => (
                                         <div key={mem.id} className="bg-stone-50 p-4 rounded-2xl border border-stone-100">
                                             <div className="flex justify-between items-center mb-2">
                                                 <span className="font-bold text-xs text-emerald-600">Familien-Eintrag</span>
@@ -293,7 +308,7 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
                                         onChange={(e) => setNewMemory(e.target.value)}
                                         required
                                     />
-                                    <Button type="submit" disabled={!newMemory.trim()} className="bg-emerald-900 text-white px-6 py-3 rounded-full hover:bg-emerald-950 transition font-medium flex items-center gap-2 shadow-sm w-full md:w-auto disabled:bg-stone-400">
+                                    <Button type="submit" disabled={!newMemory.trim()} className="bg-emerald-700 text-white px-6 py-3 rounded-full hover:bg-emerald-800 transition font-medium flex items-center gap-2 shadow-sm w-full md:w-auto disabled:bg-stone-400">
                                         <Send size={16} /> Sicher abspeichern
                                     </Button>
                                 </form>
@@ -301,8 +316,8 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
                         </div>
 
                         {/* Lieblingsbilder */}
-                        <div className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-sm border border-stone-100 flex flex-col">
-                            <h3 className="text-xl font-serif text-emerald-900 flex items-center gap-2 mb-2">
+                        <div className="bg-white p-6 sm:p-8 rounded-4xl shadow-sm border border-stone-100 flex flex-col">
+                            <h3 className="text-xl font-serif text-emerald-800 flex items-center gap-2 mb-2">
                                 <ImageIcon size={24} className="text-emerald-600" /> Lieblingsbilder
                             </h3>
                             <p className="text-sm text-stone-600 mb-6">
@@ -330,7 +345,7 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
                                     title="Bilder hochladen"
                                 />
                                 {uploadingPhoto ? (
-                                    <div className="animate-pulse text-emerald-900">Wird hochgeladen...</div>
+                                    <div className="animate-pulse text-emerald-800">Wird hochgeladen...</div>
                                 ) : (
                                     <>
                                         <UploadCloud size={32} className="mx-auto text-stone-400 mb-4" />
@@ -343,6 +358,7 @@ export default function FamilyPortal({ params }: { params: Promise<{ caseId: str
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
+        </>
     );
 }

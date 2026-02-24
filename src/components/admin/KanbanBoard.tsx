@@ -3,7 +3,6 @@ import { GripVertical, Clock, Trash2, Key } from "lucide-react";
 import {
     DndContext,
     useDroppable,
-    useDraggable,
     DragEndEvent,
     DragStartEvent,
     DragOverlay,
@@ -22,7 +21,8 @@ import {
     useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Case, CaseStatus } from "@/types";
+import { Case, CaseStatus, CaseType } from "@/types";
+import { stripCaseTypePrefix } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useRealtimeTable } from "@/hooks/useRealtimeTable";
 
@@ -34,8 +34,29 @@ const KANBAN_COLUMNS: { id: CaseStatus; title: string; color: string }[] = [
     { id: "Abgeschlossen", title: "Abgeschlossen", color: "bg-green-100 text-green-800 border-green-200" },
 ];
 
-const KanbanCard = memo(({ c, onClick, onDelete, isDragging, listeners, attributes, style }: { c: Case; onClick: () => void; onDelete: () => void; isDragging?: boolean; listeners?: any; attributes?: any; style?: any }) => {
-    const isVorsorge = c.name.startsWith("VORSORGE:");
+const CASE_TYPE_STYLES: Record<CaseType, { edge: string; badge: string }> = {
+    vorsorge: { edge: "border-l-4 border-l-blue-500", badge: "bg-blue-100 text-blue-700 border-blue-200" },
+    trauerfall: { edge: "border-l-4 border-l-emerald-600", badge: "bg-emerald-50 text-emerald-800 border-emerald-200" },
+    beratung: { edge: "border-l-4 border-l-amber-500", badge: "bg-amber-100 text-amber-700 border-amber-200" },
+    sonstiges: { edge: "border-l-4 border-l-gray-400", badge: "bg-gray-100 text-gray-600 border-gray-200" },
+};
+
+const CASE_TYPE_LABELS: Record<CaseType, string> = {
+    vorsorge: "Vorsorge",
+    trauerfall: "Trauerfall",
+    beratung: "Beratung",
+    sonstiges: "Sonstiges",
+};
+
+function getCaseTypeStyle(c: Case) {
+    const ct: CaseType = c.caseType ?? (c.name.startsWith("VORSORGE:") ? "vorsorge" : c.name.startsWith("TRAUERFALL:") ? "trauerfall" : c.name.startsWith("BERATUNG:") ? "beratung" : "trauerfall");
+    return CASE_TYPE_STYLES[ct];
+}
+
+const KanbanCard = memo(({ c, onClick, onDelete, isDragging, listeners, attributes, style }: { c: Case; onClick: () => void; onDelete: () => void; isDragging?: boolean; listeners?: object; attributes?: object; style?: React.CSSProperties }) => {
+    const typeStyle = getCaseTypeStyle(c);
+    const displayName = stripCaseTypePrefix(c.name);
+    const caseType: CaseType = c.caseType ?? (c.name.startsWith("VORSORGE:") ? "vorsorge" : c.name.startsWith("TRAUERFALL:") ? "trauerfall" : c.name.startsWith("BERATUNG:") ? "beratung" : "trauerfall");
 
     return (
         <div
@@ -43,8 +64,7 @@ const KanbanCard = memo(({ c, onClick, onDelete, isDragging, listeners, attribut
             style={style}
             {...attributes}
             {...listeners}
-            className={`bg-white p-4 rounded-xl shadow-sm border cursor-pointer hover:shadow-md transition-all relative group touch-none ${isVorsorge ? "border-blue-300 bg-blue-50/30" : "border-stone-200 hover:border-emerald-900/50"
-                } ${isDragging ? "opacity-50 grayscale-[0.5] scale-95 z-50" : ""}`}
+            className={`bg-white p-4 rounded-xl shadow-sm border cursor-pointer hover:shadow-md transition-all relative group touch-none ${typeStyle.edge} ${isDragging ? "opacity-50 grayscale-[0.5] scale-95 z-50" : ""}`}
         >
             <div className="absolute top-2 right-2 sm:opacity-0 group-hover:opacity-100 transition">
                 <button
@@ -61,11 +81,16 @@ const KanbanCard = memo(({ c, onClick, onDelete, isDragging, listeners, attribut
                 </button>
             </div>
             <div className="flex items-start gap-2 mb-2">
-                <GripVertical size={16} className="text-gray-300 mt-0.5" />
-                <h4 className={`font-medium pr-6 ${isVorsorge ? "text-blue-800" : "text-gray-800"}`}>{c.name}</h4>
+                <GripVertical size={16} className="text-gray-300 mt-0.5 shrink-0" />
+                <div className="min-w-0 flex-1">
+                    <h4 className="font-medium text-gray-800 pr-6">{displayName}</h4>
+                    <span className={`${typeStyle.badge} text-[10px] px-2 py-0.5 rounded border inline-block mt-1`}>
+                        {CASE_TYPE_LABELS[caseType]}
+                    </span>
+                </div>
             </div>
             <div className="ml-6 mb-3">
-                <span className={`${isVorsorge ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"} text-[10px] px-2 py-0.5 rounded border`}>
+                <span className="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded border border-gray-200">
                     {c.wishes?.burialType || "Unklar"}
                 </span>
             </div>
@@ -138,11 +163,14 @@ function DroppableColumn({ column, cases, onCaseClick, onDelete }: { column: typ
     );
 }
 
+type CaseTypeFilter = CaseType | "alle";
+
 interface KanbanBoardProps {
     onCaseClick?: (caseId: string) => void;
+    caseTypeFilter?: CaseTypeFilter;
 }
 
-export function KanbanBoard({ onCaseClick }: KanbanBoardProps) {
+export function KanbanBoard({ onCaseClick, caseTypeFilter = "alle" }: KanbanBoardProps) {
     const [cases, setCases] = useState<Case[]>([]);
     const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -156,31 +184,40 @@ export function KanbanBoard({ onCaseClick }: KanbanBoardProps) {
     );
 
     const fetchCases = useCallback(async () => {
-        // Sort by position primarily
-        const { data } = await supabase
+        let query = supabase
             .from('cases')
             .select('*')
             .order('position', { ascending: true })
             .order('created_at', { ascending: false });
 
+        if (caseTypeFilter !== "alle") {
+            query = query.eq('case_type', caseTypeFilter);
+        }
+
+        const { data } = await query;
+
         if (data) {
-            setCases(data.map((c: any) => ({
+            const emptyDeceased = { firstName: "", lastName: "", birthDate: "", deathDate: "", deathPlace: "", religion: "", maritalStatus: "", address: "" };
+            const emptyContact = { firstName: "", lastName: "", phone: "", email: "", relation: "", address: "" };
+            const emptyWishes = { burialType: "", specialWishes: "" };
+            setCases(data.map((c: { id: string; name: string; status: string; created_at: string; family_pin?: string; wishes?: { burialType?: string }; deceased?: unknown; contact?: unknown; checklists?: unknown; position?: number; post_care_generated?: boolean; case_type?: CaseType }) => ({
                 id: c.id,
                 name: c.name,
                 status: c.status as CaseStatus,
                 createdAt: c.created_at,
-                familyPin: c.family_pin,
-                wishes: c.wishes,
-                deceased: c.deceased,
-                contact: c.contact,
-                checklists: c.checklists,
+                familyPin: c.family_pin ?? "",
+                wishes: (c.wishes ? { ...emptyWishes, ...c.wishes } : emptyWishes) as Case["wishes"],
+                deceased: (c.deceased ? { ...emptyDeceased, ...(c.deceased as object) } : emptyDeceased) as Case["deceased"],
+                contact: (c.contact ? { ...emptyContact, ...(c.contact as object) } : emptyContact) as Case["contact"],
+                checklists: (c.checklists as Case["checklists"]) ?? [],
                 notes: [],
                 memories: [],
-                position: c.position || 0,
-                postCareGenerated: c.post_care_generated
+                position: c.position ?? 0,
+                postCareGenerated: c.post_care_generated,
+                caseType: c.case_type ?? undefined,
             })));
         }
-    }, []);
+    }, [caseTypeFilter]);
 
     useEffect(() => {
         fetchCases();
@@ -295,7 +332,7 @@ export function KanbanBoard({ onCaseClick }: KanbanBoardProps) {
             // Extract family name: prefer contact lastName, fallback to deceased lastName, then fallback to case name part
             const familyName = activeItem.contact?.lastName ||
                 activeItem.deceased?.lastName ||
-                activeItem.name.split(',')[0].trim().replace("VORSORGE:", "").trim();
+                stripCaseTypePrefix(activeItem.name).split(',')[0].trim();
 
             const now = new Date();
 

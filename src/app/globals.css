@@ -5,10 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  /* liebevoll bestatten – warme, leichte botanische Palette */
-  --color-mw-green: #047857;
-  --color-mw-green-light: #059669;
-  --color-mw-green-dark: #065f46;
+  /* Minten & Walter – helles Salbeigrün (Admin, Buttons) */
+  --color-mw-green: #4a554e;
+  --color-mw-green-light: #849289;
+  --color-mw-green-dark: #38413b;
   --color-mw-sand: #f5f5f4;
   --color-mw-sand-light: #fafaf9;
   --color-mw-offwhite: #fafaf9;

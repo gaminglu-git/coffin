@@ -7,6 +7,8 @@ import { Appointment, Task, InventoryItem } from "@/types";
 import { supabase } from "@/lib/supabase";
 import { getInventoryItems, assignInventoryItemToCaseAction } from "@/app/actions/inventory";
 import type { Employee } from "@/app/actions/employees";
+import { getTimeEntries } from "@/app/actions/time-entries";
+import type { TimeEntryEvent } from "@/app/actions/time-entries";
 import { CalendarView } from "./CalendarView";
 import { useRealtimeTable } from "@/hooks/useRealtimeTable";
 
@@ -51,6 +53,9 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
     const [assignCaseId, setAssignCaseId] = useState<string | null>(null);
     const [assignStatus, setAssignStatus] = useState<"reserved" | "assigned" | "delivered">("assigned");
 
+    const [timeEntries, setTimeEntries] = useState<TimeEntryEvent[]>([]);
+    const [showTimeEntries, setShowTimeEntries] = useState(true);
+
     const fetchData = useCallback(async () => {
         const { data: taskData } = await supabase
             .from('tasks')
@@ -58,13 +63,13 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
             .order('created_at', { ascending: false });
 
         if (taskData) {
-            setTasks(taskData.map((t: any) => ({
+            setTasks(taskData.map((t: { id: string; title: string; assignee?: string; assignee_id?: string | null; due_date?: string | null; completed?: boolean; created_at: string; case_id?: string | null }) => ({
                 id: t.id,
                 title: t.title,
                 assignee: t.assignee ?? "Alle",
-                assigneeId: t.assignee_id,
-                dueDate: t.due_date,
-                completed: t.completed,
+                assigneeId: t.assignee_id ?? null,
+                dueDate: t.due_date ?? null,
+                completed: t.completed ?? false,
                 createdAt: t.created_at,
                 caseId: t.case_id ?? null
             })));
@@ -77,7 +82,7 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
             .order('appointment_date', { ascending: true });
 
         if (apptData) {
-            setAppointments(apptData.map((a: any) => ({
+            setAppointments(apptData.map((a: { id: string; title: string; appointment_date: string; created_at: string; case_id?: string | null }) => ({
                 id: a.id,
                 title: a.title,
                 date: a.appointment_date,
@@ -106,7 +111,16 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
             setAssignedItems([]);
             setAllItems([]);
         }
+
     }, []);
+
+    const fetchTimeEntries = useCallback(async () => {
+        const now = new Date();
+        const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const to = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+        const entries = await getTimeEntries(taskFilter === "Alle" ? null : taskFilter, from, to);
+        setTimeEntries(entries);
+    }, [taskFilter]);
 
     useEffect(() => {
         fetchData();
@@ -120,6 +134,11 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
     useRealtimeTable({ table: "appointments" }, fetchData);
     useRealtimeTable({ table: "cases" }, fetchData);
     useRealtimeTable({ table: "inventory_items" }, fetchData);
+    useRealtimeTable({ table: "employee_time_entries" }, fetchTimeEntries);
+
+    useEffect(() => {
+        fetchTimeEntries();
+    }, [fetchTimeEntries]);
 
     const filteredTasks = tasks
         .filter((t) => {
@@ -220,12 +239,16 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
     const getCaseName = (caseId: string | null | undefined) =>
         caseId ? cases.find((c) => c.id === caseId)?.name ?? null : null;
 
+    const stripCaseTypePrefix = (name: string) => name.replace(/^(VORSORGE|TRAUERFALL|BERATUNG):\s*/i, "").trim();
+    const getCaseTypeLabel = (name: string) =>
+        name.startsWith("VORSORGE:") ? "Vorsorge" : name.startsWith("TRAUERFALL:") ? "Trauerfall" : name.startsWith("BERATUNG:") ? "Beratung" : null;
+
     const getCaseDisplayLabel = (caseId: string | null | undefined) => {
         if (!caseId) return null;
         const c = cases.find((x) => x.id === caseId);
         if (!c) return null;
-        const isVorsorge = c.name.startsWith("VORSORGE:");
-        if (isVorsorge) return `Vorsorge: ${c.name.replace("VORSORGE: ", "")}`;
+        const typeLabel = getCaseTypeLabel(c.name);
+        if (typeLabel) return `${typeLabel}: ${stripCaseTypePrefix(c.name)}`;
         const contact = c.contact as { firstName?: string; lastName?: string } | undefined;
         if (contact?.firstName || contact?.lastName) {
             const name = [contact.firstName, contact.lastName].filter(Boolean).join(" ").trim();
@@ -317,30 +340,46 @@ export function TeamDashboard({ taskFilter, employees, onOpenCase }: TeamDashboa
     return (
         <div className="max-w-7xl mx-auto space-y-4">
             {/* View Switcher */}
-            <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 mr-2">Ansicht:</span>
-                <div className="flex rounded-xl border border-gray-200 bg-gray-50 p-1">
-                    <button
-                        type="button"
-                        onClick={() => setViewMode("list")}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === "list" ? "bg-white shadow-sm text-mw-green border border-gray-200" : "text-gray-600 hover:text-gray-800"}`}
-                    >
-                        <List size={16} /> Liste
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setViewMode("calendar")}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === "calendar" ? "bg-white shadow-sm text-mw-green border border-gray-200" : "text-gray-600 hover:text-gray-800"}`}
-                    >
-                        <Calendar size={16} /> Kalender
-                    </button>
+            <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500 mr-2">Ansicht:</span>
+                    <div className="flex rounded-xl border border-gray-200 bg-gray-50 p-1">
+                        <button
+                            type="button"
+                            onClick={() => setViewMode("list")}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === "list" ? "bg-white shadow-sm text-mw-green border border-gray-200" : "text-gray-600 hover:text-gray-800"}`}
+                        >
+                            <List size={16} /> Liste
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setViewMode("calendar")}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === "calendar" ? "bg-white shadow-sm text-mw-green border border-gray-200" : "text-gray-600 hover:text-gray-800"}`}
+                        >
+                            <Calendar size={16} /> Kalender
+                        </button>
+                    </div>
                 </div>
+                {viewMode === "calendar" && (
+                    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={showTimeEntries}
+                            onChange={(e) => setShowTimeEntries(e.target.checked)}
+                            className="rounded border-gray-300 text-mw-green focus:ring-mw-green"
+                        />
+                        Arbeitszeiten anzeigen
+                    </label>
+                )}
             </div>
 
             {viewMode === "calendar" ? (
                 <CalendarView
                     appointments={appointments}
                     tasks={filteredTasks}
+                    timeEntries={timeEntries}
+                    employees={employees}
+                    showTimeEntries={showTimeEntries}
                     cases={cases}
                     getCaseDisplayLabel={getCaseDisplayLabel}
                     onOpenCase={onOpenCase}
