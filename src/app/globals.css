@@ -5,12 +5,17 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  /* Minten & Walter – helles Salbeigrün (Admin, Buttons) */
   --color-mw-green: #4a554e;
   --color-mw-green-light: #849289;
   --color-mw-green-dark: #38413b;
-  --color-mw-sand: #ebe8e1;
-  --color-mw-sand-light: #f8f6f3;
-  --color-mw-offwhite: #faf9f7;
+  --color-mw-sand: #f5f5f4;
+  --color-mw-sand-light: #fafaf9;
+  --color-mw-offwhite: #fafaf9;
+  --color-lb-rose: #fda4af;
+  --color-lb-rose-light: #fecdd3;
+  --color-lb-lavender: #e9d5ff;
+  --color-lb-emerald: #064e3b;
 
   --font-sans: var(--font-inter);
   --font-serif: var(--font-playfair);
@@ -43,29 +48,31 @@
 }
 
 :root {
-  --background: oklch(0.98 0 0);
-  /* Off-white #faf9f7 approx */
-  --foreground: oklch(0.2 0 0);
+  --background: oklch(0.98 0.002 90);
+  /* stone-50 #fafaf9 */
+  --foreground: oklch(0.35 0.02 160);
+  /* emerald-900 */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0 0);
+  --card-foreground: oklch(0.35 0.02 160);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0 0);
-  --primary: oklch(0.4 0.03 160);
-  /* Sage green #4a554e approx */
+  --popover-foreground: oklch(0.35 0.02 160);
+  --primary: oklch(0.35 0.02 160);
+  /* emerald-900 */
   --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.92 0.02 90);
-  /* Sand #ebe8e1 approx */
-  --secondary-foreground: oklch(0.2 0 0);
+  --secondary: oklch(0.94 0.02 90);
+  /* stone-100 */
+  --secondary-foreground: oklch(0.35 0.02 160);
   --muted: oklch(0.96 0.01 90);
-  --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.92 0.02 90);
-  --accent-foreground: oklch(0.2 0 0);
+  --muted-foreground: oklch(0.5 0.02 90);
+  --accent: oklch(0.92 0.04 350);
+  /* rose-200 */
+  --accent-foreground: oklch(0.35 0.02 160);
   --destructive: oklch(0.5 0.2 20);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
-  --ring: oklch(0.4 0.03 160);
-  --radius: 0.75rem;
+  --border: oklch(0.92 0.01 90);
+  --input: oklch(0.92 0.01 90);
+  --ring: oklch(0.35 0.02 160);
+  --radius: 1rem;
 }
 
 @layer base {
@@ -78,9 +85,9 @@
   }
 }
 
-/* react-big-calendar: minten & walter theme */
+/* react-big-calendar: liebevoll bestatten theme */
 .rbc-calendar {
-  --rbc-today-bg: #f8f6f3;
+  --rbc-today-bg: #fafaf9;
   --rbc-selected-bg: var(--color-mw-green);
 }
 .rbc-today {

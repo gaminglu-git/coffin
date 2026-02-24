@@ -42,6 +42,51 @@ export async function getCurrentEmployee(): Promise<Employee | null> {
   return data;
 }
 
+/** Ensures the current user has an employee record. Creates one if missing (for admins/auth users). */
+export async function ensureCurrentEmployee(): Promise<Employee | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: existing } = await supabase
+    .from("employees")
+    .select("id, auth_user_id, display_name, email, created_at")
+    .eq("auth_user_id", user.id)
+    .single();
+
+  if (existing) return existing;
+
+  const admin = createAdminClient();
+  const displayName =
+    (user.user_metadata?.display_name as string) ?? user.email?.split("@")[0] ?? "Mitarbeiter";
+  const email = user.email ?? `${user.id}@temp.local`;
+
+  const { data: insertData, error } = await admin
+    .from("employees")
+    .insert({
+      auth_user_id: user.id,
+      display_name: displayName,
+      email: email.toLowerCase(),
+    })
+    .select("id, auth_user_id, display_name, email, created_at")
+    .single();
+
+  if (error) {
+    console.error("ensureCurrentEmployee failed:", error);
+    return null;
+  }
+
+  await admin.from("employee_roles").insert({
+    employee_id: insertData.id,
+    role_id: "mitarbeiter",
+  });
+
+  revalidatePath("/admin/dashboard");
+  return insertData;
+}
+
 export async function createEmployee(
   email: string,
   displayName: string,
@@ -65,14 +110,25 @@ export async function createEmployee(
     return { error: "Benutzer konnte nicht angelegt werden." };
   }
 
-  const { error: insertError } = await admin.from("employees").insert({
-    auth_user_id: userData.user.id,
-    display_name: displayName.trim(),
-    email: email.trim().toLowerCase(),
-  });
+  const { data: empData, error: insertError } = await admin
+    .from("employees")
+    .insert({
+      auth_user_id: userData.user.id,
+      display_name: displayName.trim(),
+      email: email.trim().toLowerCase(),
+    })
+    .select("id")
+    .single();
 
   if (insertError) {
     return { error: insertError.message };
+  }
+
+  if (empData?.id) {
+    await admin.from("employee_roles").insert({
+      employee_id: empData.id,
+      role_id: "mitarbeiter",
+    });
   }
 
   revalidatePath("/admin/dashboard");
@@ -100,14 +156,25 @@ export async function inviteEmployee(
     return { error: "Einladung konnte nicht gesendet werden." };
   }
 
-  const { error: insertError } = await admin.from("employees").insert({
-    auth_user_id: inviteData.user.id,
-    display_name: displayName.trim(),
-    email: email.trim().toLowerCase(),
-  });
+  const { data: empData, error: insertError } = await admin
+    .from("employees")
+    .insert({
+      auth_user_id: inviteData.user.id,
+      display_name: displayName.trim(),
+      email: email.trim().toLowerCase(),
+    })
+    .select("id")
+    .single();
 
   if (insertError) {
     return { error: insertError.message };
+  }
+
+  if (empData?.id) {
+    await admin.from("employee_roles").insert({
+      employee_id: empData.id,
+      role_id: "mitarbeiter",
+    });
   }
 
   revalidatePath("/admin/dashboard");

@@ -75,26 +75,26 @@ export function VorsorgeConfigurator({ open, onOpenChange }: { open: boolean; on
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
-            className={`p-4 sm:p-5 rounded-2xl border-2 cursor-pointer flex flex-col min-h-[72px] sm:min-h-0 sm:h-full min-w-0 transition-all touch-manipulation active:scale-[0.98] select-none ${selected ? "border-mw-green bg-mw-sand-light" : "border-gray-200 bg-white hover:border-gray-300 active:bg-gray-50 shadow-sm"
+            className={`p-4 sm:p-5 rounded-2xl border-2 cursor-pointer flex flex-col min-h-[72px] sm:min-h-0 sm:h-full min-w-0 transition-all touch-manipulation active:scale-[0.98] select-none ${selected ? "border-emerald-900 bg-stone-50" : "border-stone-200 bg-white hover:border-stone-300 active:bg-stone-50 shadow-sm"
                 }`}
         >
             <div className="flex justify-between items-start mb-2 gap-3 min-w-0">
-                <h4 className={`font-medium leading-snug wrap-break-word min-w-0 flex-1 ${selected ? "text-mw-green" : "text-gray-800"}`}>{title}</h4>
-                {selected && <CheckCircle size={20} className="text-mw-green shrink-0 mt-0.5" />}
+                <h4 className={`font-medium leading-snug wrap-break-word min-w-0 flex-1 ${selected ? "text-emerald-900" : "text-stone-800"}`}>{title}</h4>
+                {selected && <CheckCircle size={20} className="text-emerald-900 shrink-0 mt-0.5" />}
             </div>
-            <p className="text-xs text-gray-500 mb-4 flex-1 min-w-0 wrap-break-word">{desc}</p>
+            <p className="text-xs text-stone-500 mb-4 flex-1 min-w-0 wrap-break-word">{desc}</p>
             <div className="mt-auto shrink-0">
-                <span className="text-sm font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded inline-block whitespace-nowrap">+{price} €</span>
+                <span className="text-sm font-bold text-stone-700 bg-stone-100 px-2 py-1 rounded inline-block whitespace-nowrap">+{price} €</span>
             </div>
         </div>
     );
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-auto sm:max-w-2xl md:max-w-4xl p-0 overflow-hidden bg-mw-offwhite rounded-2xl sm:rounded-3xl border-0 gap-0 flex flex-col h-[95dvh] sm:h-auto sm:max-h-[min(90vh,100dvh)]">
-                <DialogHeader className="p-4 sm:p-6 border-b border-gray-200 bg-white shrink-0 pt-[max(1rem,env(safe-area-inset-top))]">
-                    <DialogTitle className="text-2xl font-serif text-mw-green">Vorsorge Konfigurator</DialogTitle>
-                    <p className="text-sm text-gray-500 mt-1">Schritt {step} von 4</p>
+            <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-auto sm:max-w-2xl md:max-w-4xl p-0 overflow-hidden bg-stone-50 rounded-2xl sm:rounded-4xl border-0 gap-0 flex flex-col h-[95dvh] sm:h-auto sm:max-h-[min(90vh,100dvh)]">
+                <DialogHeader className="p-4 sm:p-6 border-b border-stone-200 bg-white shrink-0 pt-[max(1rem,env(safe-area-inset-top))]">
+                    <DialogTitle className="text-2xl font-serif text-emerald-900">Vorsorge Konfigurator</DialogTitle>
+                    <p className="text-sm text-stone-500 mt-1">Schritt {step} von 4</p>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit(submitForm)} className="flex flex-col min-h-0 flex-1 overflow-hidden">
@@ -102,7 +102,7 @@ export function VorsorgeConfigurator({ open, onOpenChange }: { open: boolean; on
                         <div className="w-full md:w-2/3 p-4 sm:p-6 md:p-8 overflow-y-auto overflow-x-hidden min-h-0 flex-1 overscroll-contain">
                             {step === 1 && (
                                 <div className="space-y-6 animate-in slide-in-from-right-4">
-                                    <h3 className="text-xl font-medium text-gray-800 mb-6">Bestattungsart</h3>
+                                    <h3 className="text-xl font-medium text-stone-800 mb-6">Bestattungsart</h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                         {Object.keys(PRICING.burialType).map((key) => (
                                             <OptionCard
@@ -119,7 +119,7 @@ export function VorsorgeConfigurator({ open, onOpenChange }: { open: boolean; on
                             )}
                             {step === 2 && (
                                 <div className="space-y-6 animate-in slide-in-from-right-4">
-                                    <h3 className="text-xl font-medium text-gray-800 mb-6">Wahl der Ausstattung</h3>
+                                    <h3 className="text-xl font-medium text-stone-800 mb-6">Wahl der Ausstattung</h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                         {Object.keys(PRICING.coffinUrn).map((key) => (
                                             <OptionCard
@@ -136,7 +136,7 @@ export function VorsorgeConfigurator({ open, onOpenChange }: { open: boolean; on
                             )}
                             {step === 3 && (
                                 <div className="space-y-6 animate-in slide-in-from-right-4">
-                                    <h3 className="text-xl font-medium text-gray-800 mb-6">Rahmen der Abschiednahme</h3>
+                                    <h3 className="text-xl font-medium text-stone-800 mb-6">Rahmen der Abschiednahme</h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                         {Object.keys(PRICING.ceremony).map((key) => (
                                             <OptionCard
@@ -153,15 +153,15 @@ export function VorsorgeConfigurator({ open, onOpenChange }: { open: boolean; on
                             )}
                             {step === 4 && (
                                 <div className="space-y-6 animate-in slide-in-from-right-4 min-w-0">
-                                    <h3 className="text-xl font-medium text-gray-800 mb-2">Ihre Konfiguration</h3>
-                                    <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 mb-6 min-w-0">
+                                    <h3 className="text-xl font-medium text-stone-800 mb-2">Ihre Konfiguration</h3>
+                                    <div className="bg-white p-4 sm:p-6 rounded-2xl border border-stone-200 mb-6 min-w-0">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
                                             <div>
-                                                <Label htmlFor="firstName" className="text-xs font-medium text-gray-500 mb-1">Vorname</Label>
+                                                <Label htmlFor="firstName" className="text-xs font-medium text-stone-500 mb-1">Vorname</Label>
                                                 <Input
                                                     id="firstName"
                                                     autoComplete="given-name"
-                                                    className="w-full p-3 text-base border border-gray-300 rounded-xl min-h-[44px]"
+                                                    className="w-full p-3 text-base border border-stone-300 rounded-xl min-h-[44px]"
                                                     {...register("contact.firstName")}
                                                     aria-invalid={!!errors.contact?.firstName}
                                                 />
@@ -170,11 +170,11 @@ export function VorsorgeConfigurator({ open, onOpenChange }: { open: boolean; on
                                                 )}
                                             </div>
                                             <div>
-                                                <Label htmlFor="lastName" className="block text-xs font-medium text-gray-500 mb-1">Nachname</Label>
+                                                <Label htmlFor="lastName" className="block text-xs font-medium text-stone-500 mb-1">Nachname</Label>
                                                 <Input
                                                     id="lastName"
                                                     autoComplete="family-name"
-                                                    className="w-full p-3 text-base border border-gray-300 rounded-xl min-h-[44px]"
+                                                    className="w-full p-3 text-base border border-stone-300 rounded-xl min-h-[44px]"
                                                     {...register("contact.lastName")}
                                                     aria-invalid={!!errors.contact?.lastName}
                                                 />
@@ -183,13 +183,13 @@ export function VorsorgeConfigurator({ open, onOpenChange }: { open: boolean; on
                                                 )}
                                             </div>
                                             <div className="sm:col-span-2">
-                                                <Label htmlFor="email" className="block text-xs font-medium text-gray-500 mb-1">E-Mail Adresse</Label>
+                                                <Label htmlFor="email" className="block text-xs font-medium text-stone-500 mb-1">E-Mail Adresse</Label>
                                                 <Input
                                                     id="email"
                                                     type="email"
                                                     inputMode="email"
                                                     autoComplete="email"
-                                                    className="w-full p-3 text-base border border-gray-300 rounded-xl min-h-[44px]"
+                                                    className="w-full p-3 text-base border border-stone-300 rounded-xl min-h-[44px]"
                                                     {...register("contact.email")}
                                                     aria-invalid={!!errors.contact?.email}
                                                 />
@@ -203,10 +203,10 @@ export function VorsorgeConfigurator({ open, onOpenChange }: { open: boolean; on
                             )}
                         </div>
 
-                        <div className="w-full md:w-1/3 bg-gray-50 border-t md:border-t-0 md:border-l border-gray-200 p-4 sm:p-6 flex flex-col justify-between min-w-0 shrink-0">
+                        <div className="w-full md:w-1/3 bg-stone-100 border-t md:border-t-0 md:border-l border-stone-200 p-4 sm:p-6 flex flex-col justify-between min-w-0 shrink-0">
                             <div className="min-w-0">
-                                <h3 className="font-serif text-xl text-mw-green mb-4 sm:mb-6">Kostenschätzung</h3>
-                                <div className="space-y-4 text-sm text-gray-600 border-b border-gray-200 pb-4 sm:pb-6 mb-4 sm:mb-6">
+                                <h3 className="font-serif text-xl text-emerald-900 mb-4 sm:mb-6">Kostenschätzung</h3>
+                                <div className="space-y-4 text-sm text-stone-600 border-b border-stone-200 pb-4 sm:pb-6 mb-4 sm:mb-6">
                                     <div className="flex justify-between gap-2 sm:gap-4 min-w-0">
                                         <span className="shrink-0">Basis (Begleitung)</span>
                                         <span className="font-medium shrink-0">{PRICING.baseFee} €</span>
@@ -225,30 +225,30 @@ export function VorsorgeConfigurator({ open, onOpenChange }: { open: boolean; on
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-end gap-2 min-w-0">
-                                    <span className="text-gray-800 font-medium shrink-0">Summe (ca.)*</span>
-                                    <span className="text-xl sm:text-2xl font-serif text-mw-green font-bold shrink-0 text-right">{estimatedPrice.toLocaleString("de-DE")} €</span>
+                                    <span className="text-stone-800 font-medium shrink-0">Summe (ca.)*</span>
+                                    <span className="text-xl sm:text-2xl font-serif text-emerald-900 font-bold shrink-0 text-right">{estimatedPrice.toLocaleString("de-DE")} €</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-gray-200 bg-white rounded-b-2xl sm:rounded-b-3xl flex justify-between items-center gap-4 shrink-0 flex-wrap sm:flex-nowrap">
+                    <div className="p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200 bg-white rounded-b-2xl sm:rounded-b-4xl flex justify-between items-center gap-4 shrink-0 flex-wrap sm:flex-nowrap">
                         {step > 1 ? (
-                            <Button type="button" variant="ghost" onClick={() => setStep(step - 1)} className="flex items-center gap-2 text-gray-600 min-h-[44px] min-w-[44px] touch-manipulation -ml-2">
+                            <Button type="button" variant="ghost" onClick={() => setStep(step - 1)} className="flex items-center gap-2 text-stone-600 min-h-[44px] min-w-[44px] touch-manipulation -ml-2">
                                 <ChevronLeft size={16} /> Zurück
                             </Button>
                         ) : (
                             <div />
                         )}
                         {step < 4 ? (
-                            <Button type="button" onClick={() => setStep(step + 1)} className="bg-mw-green text-white px-6 py-3 min-h-[44px] rounded-xl hover:bg-mw-green-dark active:scale-[0.98] touch-manipulation flex-1 sm:flex-initial justify-center">
+                            <Button type="button" onClick={() => setStep(step + 1)} className="bg-emerald-900 text-white px-6 py-3 min-h-[44px] rounded-full hover:bg-emerald-950 active:scale-[0.98] touch-manipulation flex-1 sm:flex-initial justify-center">
                                 Weiter <ChevronRight size={18} />
                             </Button>
                         ) : (
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="bg-green-600 text-white px-6 py-3 min-h-[44px] rounded-xl hover:bg-green-700 disabled:bg-gray-400 active:scale-[0.98] touch-manipulation flex-1 sm:flex-initial justify-center"
+                                className="bg-emerald-900 text-white px-6 py-3 min-h-[44px] rounded-full hover:bg-emerald-950 disabled:bg-stone-400 active:scale-[0.98] touch-manipulation flex-1 sm:flex-initial justify-center"
                             >
                                 <Send size={18} className="mr-2" /> {isSubmitting ? "Wird gesendet..." : "Unverbindlich anfragen"}
                             </Button>

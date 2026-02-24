@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCurrentEmployee } from "@/app/actions/employees";
 import type {
   Communication,
   CommunicationType,
@@ -68,12 +69,13 @@ export async function createCommunication(data: {
 }): Promise<ActionResult> {
   try {
     const supabase = await createClient();
+    const employeeId = data.employeeId ?? (await getCurrentEmployee())?.id ?? null;
     const { data: inserted, error } = await supabase
       .from("communications")
       .insert({
         correspondence_id: data.correspondenceId ?? null,
         case_id: data.caseId,
-        employee_id: data.employeeId ?? null,
+        employee_id: employeeId,
         task_id: data.taskId ?? null,
         appointment_id: data.appointmentId ?? null,
         type: data.type,

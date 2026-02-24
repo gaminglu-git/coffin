@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Pencil, Trash2, UploadCloud, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -162,12 +163,15 @@ export function PhotoGallery({ caseId, photos, onUpdate }: PhotoGalleryProps) {
                 className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-100 cursor-pointer"
                 onClick={() => openViewer(index)}
               >
-                <img
-                  src={photo.url}
-                  alt={photo.caption || `Foto von ${photo.uploadedByName}`}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
+                {photo.url && (
+                  <Image
+                    src={photo.url}
+                    alt={photo.caption || `Foto von ${photo.uploadedByName}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 25vw, 16vw"
+                  />
+                )}
                 <div
                   className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 sm:gap-2"
                   onClick={(e) => e.stopPropagation()}
@@ -188,7 +192,7 @@ export function PhotoGallery({ caseId, photos, onUpdate }: PhotoGalleryProps) {
                     <Trash2 size={14} className="sm:w-4 sm:h-4" />
                   </button>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 sm:p-2 pointer-events-none">
+                <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent p-1.5 sm:p-2 pointer-events-none">
                   <p className="text-white text-[10px] sm:text-xs font-medium truncate">
                     {photo.uploadedByName}
                   </p>
@@ -226,11 +230,21 @@ export function PhotoGallery({ caseId, photos, onUpdate }: PhotoGalleryProps) {
           {editingPhoto && (
             <div className="space-y-4 py-4">
               <div className="flex gap-4">
-                <img
-                  src={editingPhoto.url}
-                  alt=""
-                  className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border shrink-0"
-                />
+                {editingPhoto.url ? (
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-lg border overflow-hidden">
+                    <Image
+                      src={editingPhoto.url}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="96px"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-lg border bg-gray-100 flex items-center justify-center">
+                    <ImageIcon className="text-gray-400" size={24} />
+                  </div>
+                )}
                 <div className="flex-1 space-y-3 min-w-0">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">

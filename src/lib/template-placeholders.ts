@@ -58,3 +58,48 @@ export function replacePlaceholders(
   }
   return result;
 }
+
+/** Build placeholder values from case wizard form data (for checklist templates at case creation) */
+export function getPlaceholderValuesFromFormData(data: {
+  deceased?: { firstName?: string; lastName?: string; birthDate?: string; deathDate?: string; deathPlace?: string; address?: string };
+  contact?: { firstName?: string; lastName?: string; phone?: string; email?: string; address?: string; relation?: string };
+  name?: string;
+}): Record<string, string> {
+  const deceased = data.deceased ?? {};
+  const contact = data.contact ?? {};
+  const deceasedName = [deceased.firstName, deceased.lastName].filter(Boolean).join(" ") || "—";
+  const contactName = [contact.firstName, contact.lastName].filter(Boolean).join(" ") || "—";
+  const caseName = (data.name ?? [deceased.lastName, deceased.firstName].filter(Boolean).join(", ")) || "—";
+
+  return {
+    [PLACEHOLDERS.deceased_name]: deceasedName,
+    [PLACEHOLDERS.deceased_firstName]: deceased.firstName ?? "",
+    [PLACEHOLDERS.deceased_lastName]: deceased.lastName ?? "",
+    [PLACEHOLDERS.deceased_birthDate]: deceased.birthDate ?? "",
+    [PLACEHOLDERS.deceased_deathDate]: deceased.deathDate ?? "",
+    [PLACEHOLDERS.deceased_deathPlace]: deceased.deathPlace ?? "",
+    [PLACEHOLDERS.deceased_address]: deceased.address ?? "",
+    [PLACEHOLDERS.contact_name]: contactName,
+    [PLACEHOLDERS.contact_firstName]: contact.firstName ?? "",
+    [PLACEHOLDERS.contact_lastName]: contact.lastName ?? "",
+    [PLACEHOLDERS.contact_phone]: contact.phone ?? "",
+    [PLACEHOLDERS.contact_email]: contact.email ?? "",
+    [PLACEHOLDERS.contact_address]: contact.address ?? "",
+    [PLACEHOLDERS.contact_relation]: contact.relation ?? "",
+    [PLACEHOLDERS.case_name]: caseName,
+  };
+}
+
+/** Replace placeholders in checklist items */
+export function replacePlaceholdersInChecklists(
+  checklists: { title: string; items: { text: string; completed: boolean }[] }[],
+  values: Record<string, string>
+): { title: string; items: { text: string; completed: boolean }[] }[] {
+  return checklists.map((list) => ({
+    title: replacePlaceholders(list.title, values),
+    items: list.items.map((item) => ({
+      ...item,
+      text: replacePlaceholders(item.text, values),
+    })),
+  }));
+}

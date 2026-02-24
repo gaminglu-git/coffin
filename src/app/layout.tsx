@@ -6,8 +6,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 
 export const metadata: Metadata = {
-  title: "Minten & Walter Bestattungen",
-  description: "Wir begleiten Abschied. Einfühlsam, offen und menschlich. Seit über 20 Jahren in Bonn.",
+  title: "liebevoll bestatten",
+  description: "Wir begleiten Sie in schweren Zeiten mit Wärme, Empathie und einem Fokus auf das, was wirklich zählt: Ein würdevoller, liebevoller Abschied.",
 };
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="de" className={`${inter.variable} ${playfair.variable} scroll-smooth`}>
       <body
-        className="font-sans antialiased text-gray-800 bg-[#faf9f7] selection:bg-[#4a554e] selection:text-white"
+        className="font-sans antialiased text-stone-700 bg-stone-50 selection:bg-emerald-900 selection:text-white"
         suppressHydrationWarning
       >
         {children}

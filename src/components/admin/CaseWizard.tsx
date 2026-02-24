@@ -6,9 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Info, Zap, ChevronRight, ChevronLeft, CheckCircle } from "lucide-react";
 import { createCaseAction } from "@/app/actions/cases";
+import { listChecklistTemplates } from "@/app/actions/templates";
 import { caseWizardSchema, type CaseWizardFormData } from "@/lib/validations/case";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { ChecklistTemplate } from "@/types";
 
 const BURIAL_PRESETS: Record<string, { title: string; items: { text: string; completed: boolean }[] }[]> = {
     Erdbestattung: [
@@ -41,6 +43,8 @@ const defaultValues: CaseWizardFormData = {
 
 export function CaseWizard({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
     const [step, setStep] = useState(1);
+    const [checklistTemplates, setChecklistTemplates] = useState<ChecklistTemplate[]>([]);
+    const [checklistSource, setChecklistSource] = useState<"preset" | string>("preset"); // "preset" or template id
 
     const {
         watch,
@@ -57,11 +61,26 @@ export function CaseWizard({ open, onOpenChange }: { open: boolean; onOpenChange
     const caseData = watch();
 
     useEffect(() => {
-        const burialType = caseData.wishes?.burialType;
-        if (burialType && BURIAL_PRESETS[burialType]) {
-            setValue("checklists", JSON.parse(JSON.stringify(BURIAL_PRESETS[burialType])));
+        if (open) listChecklistTemplates().then(setChecklistTemplates);
+    }, [open]);
+
+    useEffect(() => {
+        if (checklistSource === "preset") {
+            const burialType = caseData.wishes?.burialType;
+            if (burialType && BURIAL_PRESETS[burialType]) {
+                setValue("checklists", JSON.parse(JSON.stringify(BURIAL_PRESETS[burialType])));
+            }
+        } else {
+            const t = checklistTemplates.find((c) => c.id === checklistSource);
+            if (t) {
+                const checklists = t.items.map((g) => ({
+                    title: g.title,
+                    items: g.items.map((it) => ({ text: it.text, completed: false })),
+                }));
+                setValue("checklists", checklists);
+            }
         }
-    }, [caseData.wishes?.burialType, setValue]);
+    }, [caseData.wishes?.burialType, checklistSource, checklistTemplates, setValue]);
 
     const submit = async (data: CaseWizardFormData) => {
         const result = await createCaseAction(data);
@@ -163,13 +182,27 @@ export function CaseWizard({ open, onOpenChange }: { open: boolean; onOpenChange
                                 <div className="bg-blue-50 text-blue-800 p-4 rounded-xl flex gap-3 border border-blue-100">
                                     <Info size={20} className="mt-0.5 shrink-0" />
                                     <div>
-                                        <h4 className="font-medium text-sm">Checklisten automatisch generiert</h4>
-                                        <p className="text-xs mt-1">Basierend auf: <strong>{caseData.wishes?.burialType}</strong></p>
+                                        <h4 className="font-medium text-sm">Checklisten</h4>
+                                        <p className="text-xs mt-1">
+                                            {checklistSource === "preset"
+                                                ? <>Standard basierend auf: <strong>{caseData.wishes?.burialType}</strong></>
+                                                : <>Benutzerdefinierte Vorlage</>}
+                                        </p>
                                     </div>
                                 </div>
                                 <div>
-                                    <div className="flex justify-between items-center mb-4">
+                                    <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                                         <h3 className="text-lg font-medium text-gray-800">Checklisten</h3>
+                                        <select
+                                            value={checklistSource}
+                                            onChange={(e) => setChecklistSource(e.target.value)}
+                                            className="p-2 rounded-lg border border-gray-200 text-sm bg-white"
+                                        >
+                                            <option value="preset">Standard ({caseData.wishes?.burialType})</option>
+                                            {checklistTemplates.map((t) => (
+                                                <option key={t.id} value={t.id}>{t.name}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                     <div className="space-y-6">
                                         {caseData.checklists?.map((list: { title: string; items: { text: string; completed: boolean }[] }, listIndex: number) => (

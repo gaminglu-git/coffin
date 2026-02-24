@@ -36,7 +36,7 @@ export function CircularPhotoGallery({
     groupByPerson = true,
     height = 500,
     bend = 2,
-    textColor = "#4a554e",
+    textColor = "#064e3b",
     borderRadius = 0.05,
     scrollSpeed = 2,
     scrollEase = 0.05,
@@ -69,7 +69,7 @@ export function CircularPhotoGallery({
                     return (
                         <div key={name} className="text-center">
                             {/* Name oben */}
-                            <h4 className="text-lg font-semibold text-mw-green mb-6 uppercase tracking-wider">
+                            <h4 className="text-lg font-semibold text-emerald-900 mb-6 uppercase tracking-wider">
                                 {name}
                             </h4>
                             {/* Circular Gallery darunter - WebGL bent carousel */}

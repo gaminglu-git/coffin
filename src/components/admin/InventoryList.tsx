@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Plus, Package, MapPin, Scan } from "lucide-react";
 import { getInventoryItems, getCategories, getLocations } from "@/app/actions/inventory";
@@ -43,7 +43,7 @@ export function InventoryList() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string>("all");
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [itemsData, categoriesData, locationsData] = await Promise.all([
@@ -61,11 +61,11 @@ export function InventoryList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, categoryFilter, locationFilter]);
 
   useEffect(() => {
     loadData();
-  }, [statusFilter, categoryFilter, locationFilter]);
+  }, [loadData]);
 
   return (
     <div className="flex flex-col h-full">
