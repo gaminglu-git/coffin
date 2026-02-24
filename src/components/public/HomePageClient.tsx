@@ -140,6 +140,21 @@ export function HomePageClient({ companySettings, pageContent }: HomePageClientP
         </div>
       </section>
 
+      <section id="team" className="py-24 bg-white px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <h3 className="text-3xl font-serif text-emerald-800 mb-4">Unser Team</h3>
+          <p className="text-stone-600 mb-8 leading-relaxed">
+            Lernen Sie die Menschen kennen, die Sie in schweren Zeiten begleiten.
+          </p>
+          <a
+            href="/team"
+            className="inline-flex items-center gap-2 bg-emerald-700 text-white px-8 py-4 rounded-full font-medium hover:bg-emerald-800 transition shadow-md"
+          >
+            <Users size={20} /> Team ansehen
+          </a>
+        </div>
+      </section>
+
       <footer id="kontakt" className="relative bg-stone-200/80 py-20 px-4 overflow-hidden">
         <div className="absolute top-4 right-8 opacity-30 pointer-events-none">
           <Image src="/assets/lotus.svg" alt="" width={64} height={64} className="w-16 h-16" />

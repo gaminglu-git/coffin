@@ -73,6 +73,14 @@ const PAGE_CONFIG: Record<
             },
           },
           {
+            type: "TeamTeaser",
+            props: {
+              title: "Unser Team",
+              intro: "Lernen Sie die Menschen kennen, die Sie in schweren Zeiten begleiten.",
+              buttonText: "Team ansehen",
+            },
+          },
+          {
             type: "ContactBlock",
             props: {
               heading: "Wir sind für Sie da.",

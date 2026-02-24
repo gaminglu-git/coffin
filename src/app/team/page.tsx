@@ -5,6 +5,8 @@ import {
 import { Navbar } from "@/components/public/Navbar";
 import { TeamPageClient } from "@/components/public/TeamPageClient";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Unser Team | liebevoll bestatten",
   description:

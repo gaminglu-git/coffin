@@ -95,12 +95,21 @@ export function Navbar({ variant = "home", onLogout, displayName = "liebevoll be
                         </Link>
                             </>
                         )}
-                        <Link
-                            href="/team"
-                            className="text-stone-600 hover:text-emerald-800 transition text-sm font-medium"
-                        >
-                            Team
-                        </Link>
+                        {isHome ? (
+                            <button
+                                onClick={() => scrollTo("team")}
+                                className="text-stone-600 hover:text-emerald-800 transition text-sm font-medium"
+                            >
+                                Team
+                            </button>
+                        ) : (
+                            <Link
+                                href="/#team"
+                                className="text-stone-600 hover:text-emerald-800 transition text-sm font-medium"
+                            >
+                                Team
+                            </Link>
+                        )}
                         <Link
                             href="/termine"
                             className="text-stone-600 hover:text-emerald-800 transition text-sm font-medium"
@@ -203,13 +212,22 @@ export function Navbar({ variant = "home", onLogout, displayName = "liebevoll be
                     </Link>
                         </>
                     )}
-                    <Link
-                        href="/team"
-                        className="block w-full text-left py-2 text-stone-700 font-medium"
-                        onClick={() => setMobileMenuOpen(false)}
-                    >
-                        Team
-                    </Link>
+                    {isHome ? (
+                        <button
+                            onClick={() => { scrollTo("team"); setMobileMenuOpen(false); }}
+                            className="block w-full text-left py-2 text-stone-700 font-medium"
+                        >
+                            Team
+                        </button>
+                    ) : (
+                        <Link
+                            href="/#team"
+                            className="block w-full text-left py-2 text-stone-700 font-medium"
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            Team
+                        </Link>
+                    )}
                     <Link
                         href="/termine"
                         className="block w-full text-left py-2 text-stone-700 font-medium"
